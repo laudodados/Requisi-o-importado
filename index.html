@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Gerador de Requisição de Material - CD</title>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <style>
+    /* --- ESTILO GERAL DO FORMULÁRIO (INPUT) --- */
+    :root {
+      --cor-primaria: #002060;
+      --cor-fundo: #8ad6cf;
+      --cor-card: #ffffff;
+      --cor-borda: #dee2e6;
+      --cor-sombra: rgba(0, 0, 0, 0.1);
+      --cor-texto: #495057;
+      --cor-titulo: #212529;
+      --cor-sucesso: #28a745;
+      --cor-sucesso-hover: #218838;
+      --cor-perigo: #dc3545;
+      --cor-perigo-hover: #c82333;
+      --cor-aviso: #ffc107;
+    }
+
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: var(--cor-fundo);
+      color: var(--cor-texto);
+    }
+
+    h1 { text-align: center; color: var(--cor-titulo); margin-bottom: 5px;}
+    .status-bd { text-align: center; font-size: 12px; font-weight: bold; margin-bottom: 20px; color: #002060; }
+
+    .form-section {
+      border: 1px solid var(--cor-borda); 
+      padding: 20px; 
+      margin: 20px auto; 
+      border-radius: 8px; 
+      background-color: var(--cor-card);
+      box-shadow: 0 4px 8px var(--cor-sombra);
+      max-width: 1100px;
+    }
+
+    .form-section h2 {
+      margin-top: 0;
+      border-bottom: 2px solid var(--cor-primaria);
+      padding-bottom: 10px;
+      color: var(--cor-primaria);
+      font-size: 18px;
+    }
+
+    .form-row { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
+      gap: 15px; 
+      margin-bottom: 15px; 
+    }
+    
+    .form-group { margin-bottom: 10px; }
+    
+    label { 
+      display: block; 
+      font-weight: bold; 
+      margin-bottom: 5px; 
+      color: var(--cor-titulo); 
+      font-size: 14px;
+    }
+    
+    input[type="text"], input[type="date"], input[type="number"], textarea {
+      width: 100%; 
+      padding: 8px 10px; 
+      border-radius: 4px; 
+      border: 1px solid var(--cor-borda); 
+      font-size: 14px; 
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+
+    textarea {
+      resize: vertical;
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--cor-primaria);
+    }
+
+    /* ITENS DINÂMICOS */
+    .item-requisicao {
+      display: grid;
+      grid-template-columns: 1fr 3fr 1fr 1fr 1fr 1fr 1fr 1fr auto;
+      gap: 8px;
+      align-items: end;
+      padding: 15px;
+      background-color: #f8f9fa;
+      border: 1px solid var(--cor-borda);
+      border-radius: 8px;
+      margin-bottom: 10px;
+      transition: background-color 0.3s;
+    }
+
+    .item-requisicao.destaque-sucesso {
+      background-color: #e8f5e9;
+      border-color: var(--cor-sucesso);
+    }
+
+    .item-requisicao label { font-size: 12px; }
+
+    /* BOTOES */
+    button { 
+      padding: 10px 15px; 
+      font-size: 14px; 
+      font-weight: bold; 
+      border: none; 
+      border-radius: 4px; 
+      cursor: pointer; 
+      transition: background-color 0.2s;
+    }
+    .btn-adicionar { background-color: var(--cor-primaria); color: white; margin-bottom: 15px; }
+    .btn-adicionar:hover { background-color: #001540; }
+    
+    .btn-remover { background-color: var(--cor-perigo); color: white; height: 35px; padding: 0 10px;}
+    .btn-remover:hover { background-color: var(--cor-perigo-hover); }
+    
+    .btn-principal { width: 100%; padding: 15px; font-size: 18px; background-color: var(--cor-sucesso); color: white; margin-top: 20px; }
+    .btn-principal:hover { background-color: var(--cor-sucesso-hover); }
+    
+    .action-container { max-width: 1100px; margin: 0 auto; }
+
+    /* Resultados visuais no form */
+    .calc-display { background-color: #e9ecef; color: #495057; font-weight: bold; cursor: not-allowed; }
+
+    @media (max-width: 900px) {
+      .item-requisicao { grid-template-columns: 1fr 1fr; align-items: start; }
+      .item-requisicao .btn-remover { grid-column: span 2; width: 100%; }
+      .form-row.custom-row { grid-template-columns: 1fr !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Requisição de Material do CD</h1>
+  <div class="status-bd" id="statusBD">⏳ Conectando ao Banco de Dados (datashock.ods)...</div>
+
+  <form id="requisicaoForm">
+    
+    <div class="form-section">
+      <h2>Dados do Solicitante</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nome do Solicitante:</label>
+          <input type="text" id="nomeSolicitante" required placeholder="Ex: MATHEUS">
+        </div>
+        <div class="form-group">
+          <label>Departamento / Setor:</label>
+          <input type="text" id="departamento" required placeholder="Ex: ASSISTÊNCIA">
+        </div>
+        <div class="form-group">
+          <label>Data:</label>
+          <input type="date" id="dataRequisicao" required>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h2>Análise Técnica / Dados do Equipamento</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Cliente:</label>
+          <input type="text" id="cliente" required placeholder="Ex: G.S. PISCINAS">
+        </div>
+        <div class="form-group">
+          <label>ID:</label>
+          <input type="text" id="idEquipamento" required placeholder="Ex: 57949">
+        </div>
+        <div class="form-group">
+          <label>Orçamento:</label>
+          <input type="text" id="orcamento" placeholder="Ex: Aprovado">
+        </div>
+        <div class="form-group">
+          <label>OS:</label>
+          <input type="text" id="osEquipamento" required placeholder="Ex: 29252">
+        </div>
+        <div class="form-group">
+          <label>Número de Série:</label>
+          <input type="text" id="numeroSerie" required placeholder="Ex: W06806MCAJ">
+        </div>
+      </div>
+      
+      <div class="form-row custom-row" style="grid-template-columns: 1fr 2fr;">
+        <div class="form-group">
+          <label>Forma de Pagamento:</label>
+          <input type="text" id="formaPagamento" placeholder="Ex: PIX, Boleto 30 dias...">
+        </div>
+        <div class="form-group">
+          <label>Observações:</label>
+          <textarea id="observacoes" rows="2" placeholder="Insira as observações ou deixe em branco para preencher à mão..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h2>Produtos Requisitados</h2>
+      <button type="button" class="btn-adicionar" onclick="adicionarItem()">+ Adicionar Produto</button>
+      
+      <div id="containerItens">
+        </div>
+    </div>
+
+    <div class="action-container">
+      <button type="button" class="btn-principal" onclick="gerarRequisicao()">Gerar PDF / Imprimir Documento</button>
+    </div>
+  </form>
+
+  <script>
+    // --- LÓGICA DO BANCO DE DADOS (datashock.ods) ---
+    let bancoProdutos = {};
+
+    async function carregarPlanilhaDeProdutos() {
+      const statusElement = document.getElementById('statusBD');
+      try {
+        // Busca o arquivo na mesma pasta do GitHub
+        const response = await fetch('datashock.ods');
+        if (!response.ok) throw new Error("Arquivo não encontrado no servidor.");
+        
+        const arrayBuffer = await response.arrayBuffer();
+        const data = new Uint8Array(arrayBuffer);
+        const workbook = XLSX.read(data, {type: 'array'});
+        
+        const primeiraAba = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[primeiraAba];
+        
+        // header: 1 transforma a planilha numa matriz [ [A1,B1,C1...], [A2,B2,C2...] ]
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+        
+        // Pula a linha 0 (cabeçalho) e percorre o resto
+        for(let i = 1; i < jsonData.length; i++) {
+          let linha = jsonData[i];
+          if(linha && linha[0]) { // Se existir o Código (Coluna A = índice 0)
+            let cod = linha[0].toString().trim();
+            bancoProdutos[cod] = {
+              descricao: linha[1] ? linha[1].toString() : "",       // Coluna B
+              tipo: linha[2] ? linha[2].toString() : "RP",          // Coluna C
+              valorUnitario: linha[7] ? parseFloat(linha[7]) : 0.00 // Coluna H
+            };
+          }
+        }
+        statusElement.textContent = `✅ Banco de Dados Carregado (${Object.keys(bancoProdutos).length} produtos prontos para uso)`;
+        statusElement.style.color = 'green';
+      } catch (error) {
+        console.warn("Aviso:", error);
+        statusElement.textContent = "⚠️ Não foi possível carregar 'datashock.ods'. O preenchimento manual continua funcionando normalmente.";
+        statusElement.style.color = '#dc3545';
+      }
+    }
+
+    // --- INICIALIZAÇÃO DA PÁGINA ---
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById('dataRequisicao').value = new Date().toISOString().split('T')[0];
+      carregarPlanilhaDeProdutos();
+      adicionarItem();
+    });
+
+    let itemCount = 0;
+
+    // --- GERENCIAMENTO DE ITENS DO FORMULÁRIO ---
+    function adicionarItem() {
+      itemCount++;
+      const container = document.getElementById('containerItens');
+      const itemDiv = document.createElement('div');
+      itemDiv.className = 'item-requisicao';
+      itemDiv.id = `itemRow_${itemCount}`;
+
+      // Adicionado o evento onchange no input do Código para acionar a busca
+      itemDiv.innerHTML = `
+        <div class="form-group"><label>Código</label><input type="text" class="item-cod" required placeholder="Digite e saia..." onchange="buscarProduto(this, ${itemCount})"></div>
+        <div class="form-group"><label>Descrição</label><input type="text" class="item-desc" required placeholder="..."></div>
+        <div class="form-group"><label>Tipo</label><input type="text" class="item-tipo" value="RP" required></div>
+        <div class="form-group"><label>Unid.</label><input type="text" class="item-unid" value="PC" required></div>
+        <div class="form-group"><label>Qtd</label><input type="number" class="item-qtd" min="1" step="0.01" value="1" oninput="calcularLinha(${itemCount})"></div>
+        <div class="form-group"><label>V. Unit (R$)</label><input type="number" class="item-valor" min="0" step="0.01" value="0.00" oninput="calcularLinha(${itemCount})"></div>
+        <div class="form-group"><label>Desc. (%)</label><input type="number" class="item-desc-perc" min="0" max="100" step="0.1" value="40" oninput="calcularLinha(${itemCount})"></div>
+        <div class="form-group"><label>Imposto (R$)</label><input type="number" class="item-imposto" min="0" step="0.01" value="0.00" oninput="calcularLinha(${itemCount})"></div>
+        <div class="form-group"><label>V. Pago</label><input type="text" class="item-pago calc-display" readonly value="R$ 0.00"></div>
+        <button type="button" class="btn-remover" onclick="removerItem(${itemCount})" title="Remover item">X</button>
+      `;
+      container.appendChild(itemDiv);
+    }
+
+    function removerItem(id) {
+      const itemRow = document.getElementById(`itemRow_${id}`);
+      if (itemRow) itemRow.remove();
+    }
+
+    // --- PROCV AUTOMÁTICO ---
+    function buscarProduto(inputElement, id) {
+      const codDigitado = inputElement.value.trim();
+      const linhaHTML = document.getElementById(`itemRow_${id}`);
+      
+      if(!linhaHTML || !codDigitado) return;
+
+      const produto = bancoProdutos[codDigitado];
+      
+      if(produto) {
+        // Preenche os dados
+        linhaHTML.querySelector('.item-desc').value = produto.descricao;
+        linhaHTML.querySelector('.item-tipo').value = produto.tipo;
+        linhaHTML.querySelector('.item-valor').value = produto.valorUnitario;
+        
+        // Dá um destaque visual (verde rápido) para mostrar que encontrou
+        linhaHTML.classList.add('destaque-sucesso');
+        setTimeout(() => linhaHTML.classList.remove('destaque-sucesso'), 1000);
+
+        // Força o cálculo
+        calcularLinha(id);
+      }
+    }
+
+    // --- LÓGICA MATEMÁTICA ---
+    function calcularLinha(id) {
+      const linha = document.getElementById(`itemRow_${id}`);
+      if(!linha) return;
+
+      const qtd = parseFloat(linha.querySelector('.item-qtd').value) || 0;
+      const vUnit = parseFloat(linha.querySelector('.item-valor').value) || 0;
+      const descPerc = parseFloat(linha.querySelector('.item-desc-perc').value) || 0;
+      const imposto = parseFloat(linha.querySelector('.item-imposto').value) || 0;
+
+      const totalBruto = qtd * vUnit;
+      const valorComDesconto = totalBruto - (totalBruto * (descPerc / 100));
+      const valorFinalPago = valorComDesconto + imposto;
+
+      linha.querySelector('.item-pago').value = `R$ ${valorFinalPago.toFixed(2)}`;
+    }
+
+    // --- GERAÇÃO DO DOCUMENTO DE IMPRESSÃO ---
+    function gerarRequisicao() {
+      const form = document.getElementById('requisicaoForm');
+      if (!form.checkValidity()) { form.reportValidity(); return; }
+
+      const payload = {
+        solicitante: document.getElementById('nomeSolicitante').value.toUpperCase(),
+        departamento: document.getElementById('departamento').value.toUpperCase(),
+        data: document.getElementById('dataRequisicao').value.split('-').reverse().join('/'),
+        cliente: document.getElementById('cliente').value.toUpperCase(),
+        id: document.getElementById('idEquipamento').value,
+        orcamento: document.getElementById('orcamento').value.toUpperCase(),
+        formaPagamento: document.getElementById('formaPagamento').value.toUpperCase(),
+        os: document.getElementById('osEquipamento').value,
+        numeroSerie: document.getElementById('numeroSerie').value.toUpperCase(),
+        observacoes: document.getElementById('observacoes').value,
+        itens: [],
+        valorTotalGeral: 0
+      };
+
+      const linhas = document.querySelectorAll('.item-requisicao');
+      if(linhas.length === 0) { alert("Adicione pelo menos um produto!"); return; }
+
+      let somatoriaTotal = 0;
+
+      linhas.forEach(linha => {
+        const qtd = parseFloat(linha.querySelector('.item-qtd').value) || 0;
+        const vUnit = parseFloat(linha.querySelector('.item-valor').value) || 0;
+        const total = qtd * vUnit;
+        const descPerc = parseFloat(linha.querySelector('.item-desc-perc').value) || 0;
+        const imposto = parseFloat(linha.querySelector('.item-imposto').value) || 0;
+        const valorPago = (total - (total * (descPerc / 100))) + imposto;
+
+        somatoriaTotal += valorPago;
+
+        payload.itens.push({
+          codigo: linha.querySelector('.item-cod').value,
+          descricao: linha.querySelector('.item-desc').value.toUpperCase(),
+          tipo: linha.querySelector('.item-tipo').value.toUpperCase(),
+          unid: linha.querySelector('.item-unid').value.toUpperCase(),
+          qtd: qtd,
+          vUnit: vUnit,
+          total: total,
+          descPerc: descPerc,
+          imposto: imposto,
+          valorPago: valorPago
+        });
+      });
+
+      payload.valorTotalGeral = somatoriaTotal;
+
+      abrirImpressao(payload);
+    }
+
+    // --- LAYOUT DE IMPRESSÃO (ESTILO LAUDO TÉCNICO SODRAMAR) ---
+    function abrirImpressao(dados) {
+      const novaJanela = window.open('', '_blank');
+      
+      const basePath = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+      const caminhoLogo = basePath + 'imagens/logolaudo.jpg';
+      
+      let tabelaItensHTML = '';
+      dados.itens.forEach(item => {
+        tabelaItensHTML += `
+          <tr>
+            <td style="text-align: center;">${item.codigo}</td>
+            <td>${item.descricao}</td>
+            <td style="text-align: center;">${item.tipo}</td>
+            <td style="text-align: center;">${item.unid}</td>
+            <td style="text-align: center;">${item.qtd.toLocaleString('pt-BR', {minimumFractionDigits: 3, maximumFractionDigits: 3})}</td>
+            <td style="text-align: right;">R$ ${item.vUnit.toFixed(2).replace('.',',')}</td>
+            <td style="text-align: right;">R$ ${item.total.toFixed(2).replace('.',',')}</td>
+            <td style="text-align: center;">${item.descPerc > 0 ? item.descPerc : '0'}</td>
+            <td style="text-align: right;">R$ ${item.imposto.toFixed(2).replace('.',',')}</td>
+            <td style="text-align: right; font-weight:bold;">R$ ${item.valorPago.toFixed(2).replace('.',',')}</td>
+          </tr>
+        `;
+      });
+
+      let observacoesHTML = dados.observacoes 
+        ? dados.observacoes.replace(/\n/g, '<br>')
+        : '<br><br><br>';
+
+      let formaPgtoHTML = dados.formaPagamento 
+        ? `<span style="font-weight: normal; margin-left: 5px; font-size: 11px;">${dados.formaPagamento}</span>`
+        : `<span style="font-weight: normal; margin-left: 5px;">__________________________________________________</span>`;
+
+      novaJanela.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Requisição CD - OS ${dados.os}</title>
+          <style>
+            body { font-family: Arial, sans-serif; font-size: 11px; color: #333; margin: 0; padding: 20px;}
+            .container { max-width: 900px; margin: 0 auto; }
+            
+            .header-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            .header-table td { vertical-align: middle; }
+            .logo-cell { width: 220px; text-align: left; }
+            .logo-cell img { max-width: 200px; height: auto; }
+            .company-title { font-weight: bold; font-size: 20px; color: #002060; text-align: right; margin-bottom: 5px; }
+            .doc-title { font-size: 16px; font-weight: bold; text-align: right; color: #555; text-transform: uppercase; }
+
+            .section-title { 
+              background-color: #002060; 
+              color: #ffffff; 
+              font-weight: bold; 
+              padding: 6px 10px; 
+              font-size: 14px; 
+              margin-top: 20px; 
+              margin-bottom: 0;
+              text-transform: uppercase;
+              border-radius: 4px 4px 0 0;
+            }
+
+            table.info-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+            table.info-table td { border: 1px solid #ccc; padding: 8px 10px; font-size: 12px; text-transform: uppercase; vertical-align: top;}
+            table.info-table strong { display: block; color: #002060; font-size: 10px; margin-bottom: 4px; }
+            
+            table.table-produtos { width: 100%; border-collapse: collapse; }
+            table.table-produtos th { 
+              background-color: #002060; 
+              color: #fff; 
+              text-align: center; 
+              font-size: 11px; 
+              font-weight: bold; 
+              padding: 8px; 
+              border: 1px solid #002060;
+            }
+            table.table-produtos td { border: 1px solid #ccc; padding: 6px 8px; font-size: 11px; text-transform: uppercase; }
+            
+            .obs-box {
+              border: 1px solid #ccc;
+              border-top: none;
+              padding: 10px;
+              font-size: 12px;
+              min-height: 40px;
+            }
+
+            .assinaturas-container {
+              display: grid;
+              grid-template-columns: repeat(5, 1fr);
+              gap: 15px;
+              margin-top: 60px;
+              text-align: center;
+            }
+            .assinaturas-container .box-assinatura {
+              border-top: 1px solid #000;
+              padding-top: 5px;
+            }
+            .assinaturas-container strong {
+              font-size: 11px;
+              color: #002060;
+              display: block;
+            }
+            .assinaturas-container span {
+              font-size: 10px;
+            }
+
+            .no-print { text-align: center; margin-bottom: 20px; }
+            .no-print button { padding: 10px 20px; background: #007bff; color: #fff; border: none; cursor: pointer; border-radius: 4px; font-weight: bold;}
+            
+            @media print { 
+              .no-print { display: none; } 
+              body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact;} 
+              .section-title, table.table-produtos th { background-color: #002060 !important; color: #fff !important; }
+              table.info-table strong { color: #002060 !important; }
+              .assinaturas-container strong { color: #002060 !important; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="no-print">
+            <button onclick="window.print()">🖨️ Imprimir Requisição</button>
+          </div>
+
+          <div class="container">
+            
+            <table class="header-table">
+              <tr>
+                <td class="logo-cell">
+                  <img src="${caminhoLogo}" alt="Sodramar" onerror="this.outerHTML='<h1 style=\\'color:#002060; margin:0;\\'>SODRAMAR</h1><p style=\\'font-size:10px; margin:0;\\'>A Piscina dos Seus Sonhos.</p>'">
+                </td>
+                <td>
+                  <div class="company-title">SODRAMAR INDUSTRIA E COMERCIO LTDA</div>
+                  <div class="doc-title">REQUISIÇÃO DE MATERIAL DO CD</div>
+                </td>
+              </tr>
+            </table>
+
+            <div class="section-title">DADOS DO SOLICITANTE</div>
+            <table class="info-table">
+              <tr>
+                <td style="width: 50%;"><strong>SETOR / DEPARTAMENTO</strong>${dados.departamento}</td>
+                <td style="width: 50%;"><strong>DATA DA SOLICITAÇÃO</strong>${dados.data}</td>
+              </tr>
+              <tr>
+                <td colspan="2"><strong>NOME DO SOLICITANTE</strong>${dados.solicitante}</td>
+              </tr>
+            </table>
+
+            <div class="section-title">ANÁLISE TÉCNICA</div>
+            <table class="info-table">
+              <tr>
+                <td style="width: 35%;"><strong>CLIENTE</strong>${dados.cliente}</td>
+                <td style="width: 15%;"><strong>ID</strong>${dados.id}</td>
+                <td style="width: 15%;"><strong>ORÇAMENTO</strong>${dados.orcamento}</td>
+                <td style="width: 15%;"><strong>OS</strong>${dados.os}</td>
+                <td style="width: 20%;"><strong>NÚMERO SÉRIE</strong>${dados.numeroSerie}</td>
+              </tr>
+            </table>
+
+            <div class="section-title">PRODUTOS REQUISITADOS</div>
+            <table class="table-produtos">
+              <thead>
+                <tr>
+                  <th style="width: 8%;">CÓDIGO</th>
+                  <th style="width: 30%;">DESCRIÇÃO</th>
+                  <th style="width: 5%;">TIPO</th>
+                  <th style="width: 5%;">UNID.</th>
+                  <th style="width: 8%;">QUANT.</th>
+                  <th style="width: 10%;">V. UNIT.</th>
+                  <th style="width: 10%;">TOTAL</th>
+                  <th style="width: 6%;">DESC. (%)</th>
+                  <th style="width: 8%;">IMPOSTO</th>
+                  <th style="width: 10%;">VALOR PAGO</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tabelaItensHTML}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="9" style="text-align: right; font-weight: bold; padding: 10px; font-size: 12px; background-color: #f8f9fa;">
+                    VALOR TOTAL DA REQUISIÇÃO:
+                  </td>
+                  <td style="text-align: right; font-weight: bold; font-size: 12px; background-color: #e9ecef; color: #002060;">
+                    R$ ${dados.valorTotalGeral.toFixed(2).replace('.',',')}
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="10" style="text-align: left; padding: 10px; font-size: 11px;">
+                    <strong style="color: #002060;">FORMA DE PAGTO:</strong>
+                    ${formaPgtoHTML}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+
+            <div class="section-title">OBSERVAÇÕES</div>
+            <div class="obs-box">
+              ${observacoesHTML}
+            </div>
+
+            <div class="assinaturas-container">
+              <div class="box-assinatura">
+                <strong>Visto do Solicitante</strong>
+              </div>
+              <div class="box-assinatura">
+                <strong>Visto da Engenharia</strong>
+                <span>(Cleiton Frank)</span>
+              </div>
+              <div class="box-assinatura">
+                <strong>Visto do Comex</strong>
+              </div>
+              <div class="box-assinatura">
+                <strong>Visto da Diretoria</strong>
+              </div>
+              <div class="box-assinatura">
+                <strong>Visto responsável pelo CD</strong>
+              </div>
+            </div>
+            
+          </div>
+        </body>
+        </html>
+      `);
+      novaJanela.document.close();
+    }
+  </script>
+</body>
+</html>
