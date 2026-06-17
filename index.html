@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>Gerador de Requisição de Material - CD</title>
   
-  <!-- Biblioteca para leitura de planilhas Excel/ODS direto no navegador -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <style>
@@ -21,7 +20,8 @@
       --cor-sucesso-hover: #218838;
       --cor-perigo: #dc3545;
       --cor-perigo-hover: #c82333;
-      --cor-aviso: #ffc107;
+      --cor-google: #2e7d32;
+      --cor-google-hover: #1b5e20;
     }
 
     body { 
@@ -89,7 +89,7 @@
       border-color: var(--cor-primaria);
     }
 
-    /* ITENS DINÂMICOS - ATUALIZADO PARA MAIS UMA COLUNA */
+    /* ITENS DINÂMICOS */
     .item-requisicao {
       display: grid;
       grid-template-columns: 1.2fr 3fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1.2fr auto;
@@ -147,8 +147,18 @@
   <div class="status-bd" id="statusBD">⏳ Conectando ao Banco de Dados (datashock.ods)...</div>
 
   <form id="requisicaoForm">
+
+    <div class="form-section" style="background-color: #e8f5e9; border-color: var(--cor-google);">
+      <h2 style="color: var(--cor-google); border-bottom-color: var(--cor-google);">Integração SAS Automática</h2>
+      <div class="form-row" style="grid-template-columns: 1fr auto; align-items: end;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label>ID do Relatório (Google Sheets):</label>
+          <input type="text" id="buscaIdGoogle" placeholder="Digite o ID e clique em Buscar...">
+        </div>
+        <button type="button" id="btnBuscarGoogle" onclick="buscarDadosGoogle()" style="background-color: var(--cor-google); color: white; height: 38px;">🔍 Buscar Dados</button>
+      </div>
+    </div>
     
-    <!-- SEÇÃO 1: CABEÇALHO E RESPONSÁVEL -->
     <div class="form-section">
       <h2>Dados do Solicitante</h2>
       <div class="form-row">
@@ -167,13 +177,16 @@
       </div>
     </div>
 
-    <!-- SEÇÃO 2: ANÁLISE TÉCNICA (DADOS DO EQUIPAMENTO) -->
     <div class="form-section">
       <h2>Análise Técnica / Dados do Equipamento</h2>
-      <div class="form-row">
+      <div class="form-row" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr;">
         <div class="form-group">
           <label>Cliente:</label>
           <input type="text" id="cliente" required placeholder="Ex: G.S. PISCINAS">
+        </div>
+        <div class="form-group">
+          <label>Equipamento:</label>
+          <input type="text" id="nomeEquipamento" required placeholder="Ex: RB6">
         </div>
         <div class="form-group">
           <label>ID:</label>
@@ -184,16 +197,18 @@
           <input type="text" id="orcamento" placeholder="Ex: Aprovado">
         </div>
         <div class="form-group">
-          <label>OS:</label>
+          <label>OS (Manual):</label>
           <input type="text" id="osEquipamento" required placeholder="Ex: 29252">
         </div>
+      </div>
+
+      <div class="form-row" style="grid-template-columns: 1fr;">
         <div class="form-group">
-          <label>Número de Série:</label>
-          <input type="text" id="numeroSerie" required placeholder="Ex: W06806MCAJ">
+          <label>Números de Série (Robô | Fonte | Motor):</label>
+          <input type="text" id="numeroSerie" required placeholder="Preenchimento automático via ID...">
         </div>
       </div>
       
-      <!-- Campos Adicionais -->
       <div class="form-row custom-row" style="grid-template-columns: 1fr 2fr;">
         <div class="form-group">
           <label>Forma de Pagamento:</label>
@@ -206,14 +221,12 @@
       </div>
     </div>
 
-    <!-- SEÇÃO 3: ITENS / PRODUTOS REQUISITADOS -->
     <div class="form-section">
       <h2>Produtos Requisitados</h2>
-      <button type="button" class="btn-adicionar" onclick="adicionarItem()">+ Adicionar Produto</button>
+      <button type="button" class="btn-adicionar" onclick="adicionarItem()">+ Adicionar Produto Manualmente</button>
       
       <div id="containerItens">
-        <!-- Itens injetados via JS -->
-      </div>
+        </div>
     </div>
 
     <div class="action-container">
@@ -222,7 +235,9 @@
   </form>
 
   <script>
-    // --- LÓGICA DO BANCO DE DADOS (datashock.ods) ---
+    // ==========================================
+    // 1. LÓGICA DO BANCO DE DADOS LOCAL (DATASHOCK)
+    // ==========================================
     let bancoProdutos = {};
 
     async function carregarPlanilhaDeProdutos() {
@@ -252,16 +267,128 @@
             };
           }
         }
-        statusElement.textContent = `✅ Banco de Dados Carregado (${Object.keys(bancoProdutos).length} produtos prontos para uso)`;
+        statusElement.textContent = `✅ Banco de Dados Local Carregado (${Object.keys(bancoProdutos).length} peças prontas)`;
         statusElement.style.color = 'green';
       } catch (error) {
         console.warn("Aviso:", error);
-        statusElement.textContent = "⚠️ Não foi possível carregar 'datashock.ods'. O preenchimento manual continua funcionando normalmente.";
+        statusElement.textContent = "⚠️ Não foi possível carregar 'datashock.ods'. O preenchimento manual das peças continua funcionando.";
         statusElement.style.color = '#dc3545';
       }
     }
 
-    // --- INICIALIZAÇÃO DA PÁGINA ---
+    // ==========================================
+    // 2. INTEGRAÇÃO GOOGLE SHEETS (API PUBLICA CSV)
+    // ==========================================
+    const GOOGLE_SHEETS_ID = '1Txe61UvhFurTnllGhH8-ESKlriwLIA2zIHwxKg22EeA';
+
+    async function buscarDadosGoogle() {
+      const idBusca = document.getElementById('buscaIdGoogle').value.trim();
+      if(!idBusca) {
+        alert("Por favor, digite o ID do Relatório SAS para buscar.");
+        return;
+      }
+      
+      const btnBusca = document.getElementById('btnBuscarGoogle');
+      btnBusca.disabled = true;
+      btnBusca.textContent = "⏳ Buscando no Google...";
+
+      try {
+        // --- BUSCA NA ABA 'laudos' ---
+        const urlLaudos = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&sheet=laudos`;
+        const resLaudos = await fetch(urlLaudos);
+        const csvLaudos = await resLaudos.text();
+        const wbLaudos = XLSX.read(csvLaudos, {type: 'string'});
+        const dadosLaudos = XLSX.utils.sheet_to_json(wbLaudos.Sheets[wbLaudos.SheetNames[0]], {header: 1});
+
+        let serieRobo = "N/A", serieFonte = "N/A", serieMotor = "N/A";
+        for(let i = 1; i < dadosLaudos.length; i++) {
+          if(dadosLaudos[i] && dadosLaudos[i][1] == idBusca) { // Coluna B = Index 1
+            serieRobo = dadosLaudos[i][7] || "N/A"; // Coluna H = Index 7
+            serieFonte = dadosLaudos[i][8] || "N/A"; // Coluna I = Index 8
+            serieMotor = dadosLaudos[i][9] || "N/A"; // Coluna J = Index 9
+            break;
+          }
+        }
+
+        // --- BUSCA NA ABA 'pecas' ---
+        const urlPecas = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&sheet=pecas`;
+        const resPecas = await fetch(urlPecas);
+        const csvPecas = await resPecas.text();
+        const wbPecas = XLSX.read(csvPecas, {type: 'string'});
+        const dadosPecas = XLSX.utils.sheet_to_json(wbPecas.Sheets[wbPecas.SheetNames[0]], {header: 1});
+
+        let clienteStr = "", equipamentoStr = "";
+        let pecasEncontradas = [];
+
+        for(let i = 1; i < dadosPecas.length; i++) {
+          if(dadosPecas[i] && dadosPecas[i][1] == idBusca) { // Coluna B = Index 1
+            if(!clienteStr) clienteStr = dadosPecas[i][2] || ""; // Coluna C = Index 2
+            if(!equipamentoStr) equipamentoStr = dadosPecas[i][3] || ""; // Coluna D = Index 3
+            
+            let codPeca = dadosPecas[i][4]; // Coluna E = Index 4
+            let qtdPeca = dadosPecas[i][6]; // Coluna G = Index 6
+            
+            if(codPeca) {
+              pecasEncontradas.push({ 
+                codigo: codPeca.toString().trim(), 
+                qtd: parseFloat(qtdPeca) || 1 
+              });
+            }
+          }
+        }
+
+        // Validação se encontrou algo
+        if(!clienteStr && pecasEncontradas.length === 0 && serieRobo === "N/A") {
+            alert("Nenhuma informação encontrada para este ID nas abas 'laudos' e 'pecas'.");
+            btnBusca.disabled = false;
+            btnBusca.textContent = "🔍 Buscar Dados";
+            return;
+        }
+
+        // --- PREENCHE OS CAMPOS DO CABEÇALHO ---
+        document.getElementById('idEquipamento').value = idBusca;
+        document.getElementById('cliente').value = clienteStr;
+        document.getElementById('nomeEquipamento').value = equipamentoStr;
+        document.getElementById('numeroSerie').value = `Robô: ${serieRobo} | Fonte: ${serieFonte} | Motor: ${serieMotor}`;
+        
+        // Foca no campo de OS para o usuário lembrar de digitar
+        document.getElementById('osEquipamento').focus();
+
+        // --- PREENCHE E GERA A TABELA DE PEÇAS ---
+        document.getElementById('containerItens').innerHTML = ''; // Limpa a tabela atual
+        
+        if (pecasEncontradas.length > 0) {
+            pecasEncontradas.forEach(p => {
+                adicionarItem(); // Adiciona linha em branco
+                
+                // Seleciona a última linha que acabou de ser criada
+                let lastRow = document.getElementById(`itemRow_${itemCount}`);
+                let inputCod = lastRow.querySelector('.item-cod');
+                let inputQtd = lastRow.querySelector('.item-qtd');
+                
+                inputCod.value = p.codigo;
+                inputQtd.value = p.qtd;
+                
+                // Dispara o PROCV do datashock.ods para aquela linha
+                buscarProduto(inputCod, itemCount);
+            });
+        } else {
+            adicionarItem(); // Se não tiver peça, deixa uma linha em branco
+        }
+
+      } catch (e) {
+        console.error("Erro na integração Google:", e);
+        alert("Ocorreu um erro de conexão ao tentar ler a planilha do Google Sheets. Verifique o console.");
+      } finally {
+        btnBusca.disabled = false;
+        btnBusca.textContent = "🔍 Buscar Dados";
+      }
+    }
+
+
+    // ==========================================
+    // 3. INICIALIZAÇÃO DA PÁGINA
+    // ==========================================
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('dataRequisicao').value = new Date().toISOString().split('T')[0];
       carregarPlanilhaDeProdutos();
@@ -270,7 +397,6 @@
 
     let itemCount = 0;
 
-    // --- GERENCIAMENTO DE ITENS DO FORMULÁRIO ---
     function adicionarItem() {
       itemCount++;
       const container = document.getElementById('containerItens');
@@ -299,7 +425,7 @@
       if (itemRow) itemRow.remove();
     }
 
-    // --- PROCV AUTOMÁTICO ---
+    // --- PROCV AUTOMÁTICO NA DIGITAÇÃO ---
     function buscarProduto(inputElement, id) {
       const codDigitado = inputElement.value.trim();
       const linhaHTML = document.getElementById(`itemRow_${id}`);
@@ -338,7 +464,9 @@
       linha.querySelector('.item-pago').value = `R$ ${valorFinalPago.toFixed(2)}`;
     }
 
-    // --- GERAÇÃO DO DOCUMENTO DE IMPRESSÃO ---
+    // ==========================================
+    // 4. GERAÇÃO DO DOCUMENTO DE IMPRESSÃO
+    // ==========================================
     function gerarRequisicao() {
       const form = document.getElementById('requisicaoForm');
       if (!form.checkValidity()) { form.reportValidity(); return; }
@@ -348,6 +476,7 @@
         departamento: document.getElementById('departamento').value.toUpperCase(),
         data: document.getElementById('dataRequisicao').value.split('-').reverse().join('/'),
         cliente: document.getElementById('cliente').value.toUpperCase(),
+        equipamento: document.getElementById('nomeEquipamento').value.toUpperCase(),
         id: document.getElementById('idEquipamento').value,
         orcamento: document.getElementById('orcamento').value.toUpperCase(),
         formaPagamento: document.getElementById('formaPagamento').value.toUpperCase(),
@@ -393,7 +522,6 @@
       abrirImpressao(payload);
     }
 
-    // --- LAYOUT DE IMPRESSÃO (ESTILO LAUDO TÉCNICO SODRAMAR) ---
     function abrirImpressao(dados) {
       const novaJanela = window.open('', '_blank');
       
@@ -519,7 +647,6 @@
 
           <div class="container">
             
-            <!-- CABEÇALHO -->
             <table class="header-table">
               <tr>
                 <td class="logo-cell">
@@ -532,7 +659,6 @@
               </tr>
             </table>
 
-            <!-- DADOS SOLICITANTE -->
             <div class="section-title">DADOS DO SOLICITANTE</div>
             <table class="info-table">
               <tr>
@@ -544,21 +670,22 @@
               </tr>
             </table>
 
-            <!-- ANÁLISE TÉCNICA -->
             <div class="section-title">ANÁLISE TÉCNICA</div>
             <table class="info-table">
               <tr>
-                <td style="width: 35%;"><strong>CLIENTE</strong>${dados.cliente}</td>
+                <td style="width: 25%;"><strong>CLIENTE</strong>${dados.cliente}</td>
+                <td style="width: 15%;"><strong>EQUIPAMENTO</strong>${dados.equipamento}</td>
                 <td style="width: 15%;"><strong>ID</strong>${dados.id}</td>
                 <td style="width: 15%;"><strong>ORÇAMENTO</strong>${dados.orcamento}</td>
                 <td style="width: 15%;"><strong>OS</strong>${dados.os}</td>
-                <td style="width: 20%;"><strong>NÚMERO SÉRIE</strong>${dados.numeroSerie}</td>
+              </tr>
+              <tr>
+                <td colspan="5"><strong>NÚMEROS DE SÉRIE</strong>${dados.numeroSerie}</td>
               </tr>
             </table>
 
-            <!-- PRODUTOS REQUISITADOS -->
             <div class="section-title">PRODUTOS REQUISITADOS</div>
-            <table class="table-produtos" style="margin-bottom: 20px;">
+            <table class="table-produtos">
               <thead>
                 <tr>
                   <th style="width: 7%;">CÓDIGO</th>
@@ -578,7 +705,6 @@
                 ${tabelaItensHTML}
               </tbody>
               <tfoot>
-                <!-- LINHA TOTAL -->
                 <tr>
                   <td colspan="10" style="text-align: right; font-weight: bold; padding: 10px; font-size: 12px; background-color: #f8f9fa;">
                     VALOR TOTAL DA REQUISIÇÃO:
@@ -587,7 +713,6 @@
                     R$ ${dados.valorTotalGeral.toFixed(2).replace('.',',')}
                   </td>
                 </tr>
-                <!-- LINHA FORMA DE PAGAMENTO (EMBUTIDA NA TABELA) -->
                 <tr>
                   <td colspan="11" style="text-align: left; padding: 10px; font-size: 11px;">
                     <strong style="color: #002060;">FORMA DE PAGTO:</strong>
@@ -597,13 +722,11 @@
               </tfoot>
             </table>
 
-            <!-- OBSERVAÇÕES SEPARADO -->
             <div class="section-title">OBSERVAÇÕES</div>
             <div class="obs-box">
               ${observacoesHTML}
             </div>
 
-            <!-- ASSINATURAS INFERIORES -->
             <div class="assinaturas-container">
               <div class="box-assinatura">
                 <strong>Visto do Solicitante</strong>
