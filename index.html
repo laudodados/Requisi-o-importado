@@ -258,7 +258,8 @@
         for(let i = 1; i < jsonData.length; i++) {
           let linha = jsonData[i];
           if(linha && linha[0]) {
-            let cod = linha[0].toString().trim();
+            // Garante que a base local também seja formatada com 6 dígitos em zeros à esquerda
+            let cod = linha[0].toString().trim().padStart(6, '0');
             bancoProdutos[cod] = {
               descricao: linha[1] ? linha[1].toString() : "",       // Coluna B
               tipo: linha[2] ? linha[2].toString() : "RP",          // Coluna C
@@ -329,8 +330,11 @@
             let qtdPeca = dadosPecas[i][6]; // Coluna G = Index 6
             
             if(codPeca) {
+              // FORÇA O PREENCHIMENTO DE 6 DÍGITOS PREENCHENDO COM ZEROS À ESQUERDA
+              let codTratado = codPeca.toString().trim().padStart(6, '0');
+              
               pecasEncontradas.push({ 
-                codigo: codPeca.toString().trim(), 
+                codigo: codTratado, 
                 qtd: parseFloat(qtdPeca) || 1 
               });
             }
@@ -387,7 +391,7 @@
 
 
     // ==========================================
-    // 3. INICIALIZAÇÃO DA PÁGINA
+    // 3. INICIALIZAÇÃO DA PÁGINA E ITENS
     // ==========================================
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('dataRequisicao').value = new Date().toISOString().split('T')[0];
@@ -425,12 +429,16 @@
       if (itemRow) itemRow.remove();
     }
 
-    // --- PROCV AUTOMÁTICO NA DIGITAÇÃO ---
+    // --- PROCV AUTOMÁTICO NA DIGITAÇÃO MANUAL ---
     function buscarProduto(inputElement, id) {
-      const codDigitado = inputElement.value.trim();
+      let codDigitado = inputElement.value.trim();
       const linhaHTML = document.getElementById(`itemRow_${id}`);
       
       if(!linhaHTML || !codDigitado) return;
+
+      // Se o usuário digitou menos que 6 dígitos manualmente, preenche com zero na tela
+      codDigitado = codDigitado.padStart(6, '0');
+      inputElement.value = codDigitado;
 
       const produto = bancoProdutos[codDigitado];
       
@@ -650,7 +658,7 @@
             <table class="header-table">
               <tr>
                 <td class="logo-cell">
-                  <img src="${caminhoLogo}" alt="Logo Sodramar">
+                  <img src="${caminhoLogo}" alt="Sodramar" onerror="this.outerHTML='<h1 style=\\'color:#002060; margin:0;\\'>SODRAMAR</h1><p style=\\'font-size:10px; margin:0;\\'>A Piscina dos Seus Sonhos.</p>'">
                 </td>
                 <td>
                   <div class="company-title">SODRAMAR INDUSTRIA E COMERCIO LTDA</div>
