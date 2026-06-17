@@ -88,10 +88,10 @@
       border-color: var(--cor-primaria);
     }
 
-    /* ITENS DINÂMICOS */
+    /* ITENS DINÂMICOS - ATUALIZADO PARA MAIS UMA COLUNA */
     .item-requisicao {
       display: grid;
-      grid-template-columns: 1fr 3fr 1fr 1fr 1fr 1fr 1fr 1fr auto;
+      grid-template-columns: 1.2fr 3fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1.2fr auto;
       gap: 8px;
       align-items: end;
       padding: 15px;
@@ -107,7 +107,7 @@
       border-color: var(--cor-sucesso);
     }
 
-    .item-requisicao label { font-size: 12px; }
+    .item-requisicao label { font-size: 11px; }
 
     /* BOTOES */
     button { 
@@ -130,7 +130,7 @@
     
     .action-container { max-width: 1100px; margin: 0 auto; }
 
-    /* Resultados visuais no form */
+    /* Resultados visuais no form (Campos que preenchem sozinhos) */
     .calc-display { background-color: #e9ecef; color: #495057; font-weight: bold; cursor: not-allowed; }
 
     @media (max-width: 900px) {
@@ -222,7 +222,6 @@
     async function carregarPlanilhaDeProdutos() {
       const statusElement = document.getElementById('statusBD');
       try {
-        // Busca o arquivo na mesma pasta do GitHub
         const response = await fetch('datashock.ods');
         if (!response.ok) throw new Error("Arquivo não encontrado no servidor.");
         
@@ -233,18 +232,17 @@
         const primeiraAba = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[primeiraAba];
         
-        // header: 1 transforma a planilha numa matriz [ [A1,B1,C1...], [A2,B2,C2...] ]
         const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
         
-        // Pula a linha 0 (cabeçalho) e percorre o resto
         for(let i = 1; i < jsonData.length; i++) {
           let linha = jsonData[i];
-          if(linha && linha[0]) { // Se existir o Código (Coluna A = índice 0)
+          if(linha && linha[0]) {
             let cod = linha[0].toString().trim();
             bancoProdutos[cod] = {
               descricao: linha[1] ? linha[1].toString() : "",       // Coluna B
               tipo: linha[2] ? linha[2].toString() : "RP",          // Coluna C
-              valorUnitario: linha[7] ? parseFloat(linha[7]) : 0.00 // Coluna H
+              valorUnitario: linha[7] ? parseFloat(linha[7]) : 0.00,// Coluna H
+              estoque: linha[8] !== undefined ? linha[8] : 0         // Coluna I (Estoque)
             };
           }
         }
@@ -274,17 +272,17 @@
       itemDiv.className = 'item-requisicao';
       itemDiv.id = `itemRow_${itemCount}`;
 
-      // Adicionado o evento onchange no input do Código para acionar a busca
       itemDiv.innerHTML = `
-        <div class="form-group"><label>Código</label><input type="text" class="item-cod" required placeholder="Digite e saia..." onchange="buscarProduto(this, ${itemCount})"></div>
+        <div class="form-group"><label>Código</label><input type="text" class="item-cod" required placeholder="Digite..." onchange="buscarProduto(this, ${itemCount})"></div>
         <div class="form-group"><label>Descrição</label><input type="text" class="item-desc" required placeholder="..."></div>
         <div class="form-group"><label>Tipo</label><input type="text" class="item-tipo" value="RP" required></div>
         <div class="form-group"><label>Unid.</label><input type="text" class="item-unid" value="PC" required></div>
+        <div class="form-group"><label>Estoque</label><input type="text" class="item-estoque calc-display" readonly value="0" tabindex="-1" title="Disponível em Estoque"></div>
         <div class="form-group"><label>Qtd</label><input type="number" class="item-qtd" min="1" step="0.01" value="1" oninput="calcularLinha(${itemCount})"></div>
         <div class="form-group"><label>V. Unit (R$)</label><input type="number" class="item-valor" min="0" step="0.01" value="0.00" oninput="calcularLinha(${itemCount})"></div>
         <div class="form-group"><label>Desc. (%)</label><input type="number" class="item-desc-perc" min="0" max="100" step="0.1" value="40" oninput="calcularLinha(${itemCount})"></div>
         <div class="form-group"><label>Imposto (R$)</label><input type="number" class="item-imposto" min="0" step="0.01" value="0.00" oninput="calcularLinha(${itemCount})"></div>
-        <div class="form-group"><label>V. Pago</label><input type="text" class="item-pago calc-display" readonly value="R$ 0.00"></div>
+        <div class="form-group"><label>V. Pago</label><input type="text" class="item-pago calc-display" readonly value="R$ 0.00" tabindex="-1"></div>
         <button type="button" class="btn-remover" onclick="removerItem(${itemCount})" title="Remover item">X</button>
       `;
       container.appendChild(itemDiv);
@@ -305,16 +303,14 @@
       const produto = bancoProdutos[codDigitado];
       
       if(produto) {
-        // Preenche os dados
         linhaHTML.querySelector('.item-desc').value = produto.descricao;
         linhaHTML.querySelector('.item-tipo').value = produto.tipo;
         linhaHTML.querySelector('.item-valor').value = produto.valorUnitario;
+        linhaHTML.querySelector('.item-estoque').value = produto.estoque; // Preenche o estoque
         
-        // Dá um destaque visual (verde rápido) para mostrar que encontrou
         linhaHTML.classList.add('destaque-sucesso');
         setTimeout(() => linhaHTML.classList.remove('destaque-sucesso'), 1000);
 
-        // Força o cálculo
         calcularLinha(id);
       }
     }
@@ -376,6 +372,7 @@
           descricao: linha.querySelector('.item-desc').value.toUpperCase(),
           tipo: linha.querySelector('.item-tipo').value.toUpperCase(),
           unid: linha.querySelector('.item-unid').value.toUpperCase(),
+          estoque: linha.querySelector('.item-estoque').value,
           qtd: qtd,
           vUnit: vUnit,
           total: total,
@@ -405,6 +402,7 @@
             <td>${item.descricao}</td>
             <td style="text-align: center;">${item.tipo}</td>
             <td style="text-align: center;">${item.unid}</td>
+            <td style="text-align: center;">${item.estoque}</td>
             <td style="text-align: center;">${item.qtd.toLocaleString('pt-BR', {minimumFractionDigits: 3, maximumFractionDigits: 3})}</td>
             <td style="text-align: right;">R$ ${item.vUnit.toFixed(2).replace('.',',')}</td>
             <td style="text-align: right;">R$ ${item.total.toFixed(2).replace('.',',')}</td>
@@ -430,7 +428,7 @@
           <title>Requisição CD - OS ${dados.os}</title>
           <style>
             body { font-family: Arial, sans-serif; font-size: 11px; color: #333; margin: 0; padding: 20px;}
-            .container { max-width: 900px; margin: 0 auto; }
+            .container { max-width: 950px; margin: 0 auto; }
             
             .header-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
             .header-table td { vertical-align: middle; }
@@ -460,12 +458,12 @@
               background-color: #002060; 
               color: #fff; 
               text-align: center; 
-              font-size: 11px; 
+              font-size: 10px; 
               font-weight: bold; 
               padding: 8px; 
               border: 1px solid #002060;
             }
-            table.table-produtos td { border: 1px solid #ccc; padding: 6px 8px; font-size: 11px; text-transform: uppercase; }
+            table.table-produtos td { border: 1px solid #ccc; padding: 6px 8px; font-size: 10px; text-transform: uppercase; }
             
             .obs-box {
               border: 1px solid #ccc;
@@ -552,16 +550,17 @@
             <table class="table-produtos">
               <thead>
                 <tr>
-                  <th style="width: 8%;">CÓDIGO</th>
-                  <th style="width: 30%;">DESCRIÇÃO</th>
-                  <th style="width: 5%;">TIPO</th>
-                  <th style="width: 5%;">UNID.</th>
-                  <th style="width: 8%;">QUANT.</th>
-                  <th style="width: 10%;">V. UNIT.</th>
-                  <th style="width: 10%;">TOTAL</th>
-                  <th style="width: 6%;">DESC. (%)</th>
+                  <th style="width: 7%;">CÓDIGO</th>
+                  <th style="width: 26%;">DESCRIÇÃO</th>
+                  <th style="width: 4%;">TIPO</th>
+                  <th style="width: 4%;">UNID.</th>
+                  <th style="width: 6%;">ESTOQUE</th>
+                  <th style="width: 6%;">QUANT.</th>
+                  <th style="width: 9%;">V. UNIT.</th>
+                  <th style="width: 9%;">TOTAL</th>
+                  <th style="width: 6%;">DESC.(%)</th>
                   <th style="width: 8%;">IMPOSTO</th>
-                  <th style="width: 10%;">VALOR PAGO</th>
+                  <th style="width: 15%;">VALOR PAGO</th>
                 </tr>
               </thead>
               <tbody>
@@ -569,25 +568,26 @@
               </tbody>
               <tfoot>
                 <tr>
-                  <td colspan="9" style="text-align: right; font-weight: bold; padding: 10px; font-size: 12px; background-color: #f8f9fa;">
+                  <td colspan="10" style="text-align: right; font-weight: bold; padding: 10px; font-size: 12px; background-color: #f8f9fa;">
                     VALOR TOTAL DA REQUISIÇÃO:
                   </td>
                   <td style="text-align: right; font-weight: bold; font-size: 12px; background-color: #e9ecef; color: #002060;">
                     R$ ${dados.valorTotalGeral.toFixed(2).replace('.',',')}
                   </td>
                 </tr>
-                <tr>
-                  <td colspan="10" style="text-align: left; padding: 10px; font-size: 11px;">
-                    <strong style="color: #002060;">FORMA DE PAGTO:</strong>
-                    ${formaPgtoHTML}
-                  </td>
-                </tr>
               </tfoot>
             </table>
 
-            <div class="section-title">OBSERVAÇÕES</div>
+            <div class="section-title">OBSERVAÇÕES E FORMA DE PAGAMENTO</div>
             <div class="obs-box">
-              ${observacoesHTML}
+              <div style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed #e0e0e0;">
+                <strong style="color: #002060; font-size: 11px;">FORMA DE PAGTO:</strong>
+                ${formaPgtoHTML}
+              </div>
+              <div style="margin-top: 5px;">
+                <strong style="color: #002060; font-size: 11px;">OBSERVAÇÕES:</strong>
+                <div style="margin-top: 5px;">${observacoesHTML}</div>
+              </div>
             </div>
 
             <div class="assinaturas-container">
