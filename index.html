@@ -5,8 +5,6 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <title>Gerador de Requisição de Material - CD</title>
   
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
   <style>
     /* --- ESTILO GERAL DO FORMULÁRIO (INPUT) --- */
     :root {
@@ -145,7 +143,7 @@
 <body>
 
   <h1>Requisição de Material do CD</h1>
-  <div class="status-bd" id="statusBD">⏳ Conectando ao estoque online...</div>
+  <div class="status-bd" id="statusBD">⏳ Conectando ao estoque online pelo Google Sheets / Apps Script...</div>
 
   <form id="requisicaoForm">
 
@@ -241,6 +239,53 @@
     // ==========================================
     let bancoProdutos = {};
 
+    function parseCSV(csv) {
+      const linhas = [];
+      let linha = [];
+      let campo = '';
+      let dentroAspas = false;
+
+      for (let i = 0; i < csv.length; i++) {
+        const char = csv[i];
+        const prox = csv[i + 1];
+
+        if (char === '"' && dentroAspas && prox === '"') {
+          campo += '"';
+          i++;
+        } else if (char === '"') {
+          dentroAspas = !dentroAspas;
+        } else if (char === ',' && !dentroAspas) {
+          linha.push(campo);
+          campo = '';
+        } else if ((char === '\n' || char === '\r') && !dentroAspas) {
+          if (char === '\r' && prox === '\n') i++;
+          linha.push(campo);
+          if (linha.some(valor => valor !== '')) linhas.push(linha);
+          linha = [];
+          campo = '';
+        } else {
+          campo += char;
+        }
+      }
+
+      linha.push(campo);
+      if (linha.some(valor => valor !== '')) linhas.push(linha);
+      return linhas;
+    }
+
+    async function carregarAbaCSV(nomeAba) {
+      const url = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(nomeAba)}`;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Não foi possível acessar a aba '${nomeAba}' no Google Sheets.`);
+
+      const csv = await response.text();
+      if (!csv || csv.toLowerCase().includes('invalid query')) {
+        throw new Error(`A aba '${nomeAba}' não foi encontrada ou não está pública para leitura.`);
+      }
+
+      return parseCSV(csv);
+    }
+
     function normalizarTexto(valor) {
       return (valor || '')
         .toString()
@@ -281,55 +326,45 @@
       bancoProdutos = {};
 
       try {
-        const urlEstoque = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(ABA_ESTOQUE)}`;
+        // Agora o estoque vem EXCLUSIVAMENTE do Apps Script / Google Sheets.
+        // Rota usada no Apps Script: doGet?action=getEstoque
+        const urlEstoque = `${WEB_APP_URL}?action=getEstoque&_=${Date.now()}`;
+        const response = await fetch(urlEstoque, { cache: 'no-store' });
+        if (!response.ok) throw new Error('Não foi possível acessar o Apps Script de estoque.');
 
-        const response = await fetch(urlEstoque);
-        if (!response.ok) throw new Error("Não foi possível acessar a aba de estoque online.");
-
-        const csvEstoque = await response.text();
-
-        if (!csvEstoque || csvEstoque.toLowerCase().includes('invalid query')) {
-          throw new Error(`A aba '${ABA_ESTOQUE}' não foi encontrada ou não está pública para leitura.`);
+        const estoqueOnline = await response.json();
+        if (estoqueOnline.error || estoqueOnline.erro) {
+          throw new Error(estoqueOnline.error || estoqueOnline.erro);
         }
 
-        const workbook = XLSX.read(csvEstoque, { type: 'string' });
-        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        const nomes = estoqueOnline.nomes || {};
+        const estoques = estoqueOnline.estoque || {};
 
-        if (!jsonData || jsonData.length < 2) {
-          throw new Error(`A aba '${ABA_ESTOQUE}' não possui dados suficientes.`);
-        }
+        // Estes campos já ficam preparados caso você atualize o Apps Script
+        // para retornar também Tipo e Preço da aba DataShock.
+        const tipos = estoqueOnline.tipos || estoqueOnline.tipo || {};
+        const precos = estoqueOnline.precos || estoqueOnline.preco || estoqueOnline.precosUnitarios || {};
 
-        const headers = jsonData[0] || [];
-
-        // Primeiro tenta localizar pelas colunas/cabeçalhos.
-        // Caso não encontre, mantém o padrão antigo do DataStock/datashock:
-        // A = Código, B = Descrição, C = Tipo, H = Valor unitário, I = Estoque.
-        const idxCodigo = encontrarIndiceCabecalho(headers, ['codigo', 'cod', 'código', 'produto'], 0);
-        const idxDescricao = encontrarIndiceCabecalho(headers, ['descricao', 'descrição', 'produto', 'nome'], 1);
-        const idxTipo = encontrarIndiceCabecalho(headers, ['tipo'], 2);
-        const idxValor = encontrarIndiceCabecalho(headers, ['valor unitario', 'valor', 'preco', 'preço'], 7);
-        const idxEstoque = encontrarIndiceCabecalho(headers, ['estoque', 'saldo', 'quantidade disponivel', 'disponivel'], 8);
-
-        for (let i = 1; i < jsonData.length; i++) {
-          const linha = jsonData[i];
-          if (!linha || linha[idxCodigo] === undefined || linha[idxCodigo] === '') continue;
-
-          const cod = linha[idxCodigo].toString().trim().padStart(6, '0');
+        Object.keys(nomes).forEach(codigoOriginal => {
+          const cod = codigoOriginal.toString().trim().padStart(6, '0');
+          const codigoSemZero = codigoOriginal.toString().trim().replace(/^0+/, '');
 
           bancoProdutos[cod] = {
-            descricao: linha[idxDescricao] ? linha[idxDescricao].toString() : "",
-            tipo: linha[idxTipo] ? linha[idxTipo].toString() : "RP",
-            valorUnitario: parseValorMonetario(linha[idxValor]),
-            estoque: linha[idxEstoque] !== undefined && linha[idxEstoque] !== '' ? linha[idxEstoque] : 0
+            descricao: nomes[codigoOriginal] || nomes[cod] || '',
+            tipo: tipos[codigoOriginal] || tipos[cod] || tipos[codigoSemZero] || 'RP',
+            valorUnitario: parseValorMonetario(precos[codigoOriginal] || precos[cod] || precos[codigoSemZero] || 0),
+            estoque: estoques[codigoOriginal] ?? estoques[cod] ?? estoques[codigoSemZero] ?? 0
           };
-        }
+        });
 
-        statusElement.textContent = `✅ Estoque online carregado da aba '${ABA_ESTOQUE}' (${Object.keys(bancoProdutos).length} peças prontas)`;
+        const total = Object.keys(bancoProdutos).length;
+        if (total === 0) throw new Error('A rota getEstoque retornou vazia.');
+
+        statusElement.textContent = `✅ Estoque carregado do Google Sheets / DataShock (${total} peças prontas)`;
         statusElement.style.color = 'green';
       } catch (error) {
-        console.warn("Aviso:", error);
-        statusElement.textContent = `⚠️ Não foi possível carregar o estoque online da aba '${ABA_ESTOQUE}'. O preenchimento manual das peças continua funcionando.`;
+        console.warn('Aviso:', error);
+        statusElement.textContent = '⚠️ Não foi possível carregar o estoque pelo Apps Script. Verifique a rota action=getEstoque.';
         statusElement.style.color = '#dc3545';
       }
     }
@@ -338,8 +373,11 @@
     // ==========================================
     // 2. INTEGRAÇÃO GOOGLE SHEETS (API PUBLICA CSV)
     // ==========================================
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby71jdg4zcudOYmfj_yI1_a-K_KCtuw-1EoX14ki61y8Co681HHSFWOdXtsQPcNpP-xvg/exec';
+
+    // Mantido apenas para a integração antiga de laudos/peças do formulário.
+    // O estoque NÃO usa mais CSV nem arquivo físico; usa WEB_APP_URL?action=getEstoque.
     const GOOGLE_SHEETS_ID = '1Txe61UvhFurTnllGhH8-ESKlriwLIA2zIHwxKg22EeA';
-    const ABA_ESTOQUE = 'DataStock';
 
     async function buscarDadosGoogle() {
       const idBusca = document.getElementById('buscaIdGoogle').value.trim();
@@ -354,11 +392,7 @@
 
       try {
         // --- BUSCA NA ABA 'laudos' ---
-        const urlLaudos = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&sheet=laudos`;
-        const resLaudos = await fetch(urlLaudos);
-        const csvLaudos = await resLaudos.text();
-        const wbLaudos = XLSX.read(csvLaudos, {type: 'string'});
-        const dadosLaudos = XLSX.utils.sheet_to_json(wbLaudos.Sheets[wbLaudos.SheetNames[0]], {header: 1});
+        const dadosLaudos = await carregarAbaCSV('laudos');
 
         let serieRobo = "N/A", serieFonte = "N/A", serieMotor = "N/A";
         for(let i = 1; i < dadosLaudos.length; i++) {
@@ -371,11 +405,7 @@
         }
 
         // --- BUSCA NA ABA 'pecas' ---
-        const urlPecas = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&sheet=pecas`;
-        const resPecas = await fetch(urlPecas);
-        const csvPecas = await resPecas.text();
-        const wbPecas = XLSX.read(csvPecas, {type: 'string'});
-        const dadosPecas = XLSX.utils.sheet_to_json(wbPecas.Sheets[wbPecas.SheetNames[0]], {header: 1});
+        const dadosPecas = await carregarAbaCSV('pecas');
 
         let clienteStr = "", equipamentoStr = "";
         let pecasEncontradas = [];
