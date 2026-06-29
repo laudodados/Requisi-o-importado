@@ -145,7 +145,7 @@
 <body>
 
   <h1>Requisição de Material do CD</h1>
-  <div class="status-bd" id="statusBD">⏳ Conectando ao estoque online da aba DataShock...</div>
+  <div class="status-bd" id="statusBD">⏳ Conectando ao estoque online...</div>
 
   <form id="requisicaoForm">
 
@@ -303,8 +303,8 @@
         const headers = jsonData[0] || [];
 
         // Primeiro tenta localizar pelas colunas/cabeçalhos.
-        // Caso não encontre, mantém o padrão antigo do DataShock/datashock:
-        // A = Código do componente, B = Nome do Equipamento/Componente, C = Tipo, H = Preço, I = Estoque.
+        // Caso não encontre, mantém o padrão antigo do DataStock/datashock:
+        // A = Código, B = Descrição, C = Tipo, H = Valor unitário, I = Estoque.
         const idxCodigo = encontrarIndiceCabecalho(headers, ['codigo', 'cod', 'código', 'produto'], 0);
         const idxDescricao = encontrarIndiceCabecalho(headers, ['descricao', 'descrição', 'produto', 'nome'], 1);
         const idxTipo = encontrarIndiceCabecalho(headers, ['tipo'], 2);
@@ -339,7 +339,7 @@
     // 2. INTEGRAÇÃO GOOGLE SHEETS (API PUBLICA CSV)
     // ==========================================
     const GOOGLE_SHEETS_ID = '1Txe61UvhFurTnllGhH8-ESKlriwLIA2zIHwxKg22EeA';
-    const ABA_ESTOQUE = 'DataShock';
+    const ABA_ESTOQUE = 'DataStock';
 
     async function buscarDadosGoogle() {
       const idBusca = document.getElementById('buscaIdGoogle').value.trim();
