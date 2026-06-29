@@ -138,9 +138,86 @@
       .item-requisicao .btn-remover { grid-column: span 2; width: 100%; }
       .form-row.custom-row { grid-template-columns: 1fr !important; }
     }
+
+
+    /* BLOQUEIO DE TELA ENQUANTO O ESTOQUE CARREGA */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(3px);
+      padding: 20px;
+    }
+
+    .loading-overlay.hidden {
+      display: none;
+    }
+
+    .loading-card {
+      width: min(460px, 100%);
+      background: var(--cor-card);
+      color: var(--cor-texto);
+      border-radius: 12px;
+      padding: 26px;
+      text-align: center;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--cor-borda);
+    }
+
+    .loading-spinner {
+      width: 42px;
+      height: 42px;
+      border: 4px solid #d7d7d7;
+      border-top-color: var(--cor-primaria);
+      border-radius: 50%;
+      margin: 0 auto 16px;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .loading-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--cor-titulo);
+      margin-bottom: 8px;
+    }
+
+    .loading-text {
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .loading-retry {
+      display: none;
+      background: var(--cor-google);
+      color: white;
+      margin-top: 8px;
+    }
+
+    .loading-retry.show {
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
+
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-card">
+      <div class="loading-spinner" id="loadingSpinner"></div>
+      <div class="loading-title" id="loadingTitle">Carregando estoque</div>
+      <div class="loading-text" id="loadingText">Aguarde. O formulário será liberado somente depois que a aba DataShock carregar.</div>
+      <button type="button" class="loading-retry" id="btnRetryEstoque" onclick="inicializarTela()">Tentar carregar novamente</button>
+    </div>
+  </div>
+
 
   <h1>Requisição de Material do CD</h1>
   <div class="status-bd" id="statusBD">⏳ Conectando ao estoque online pelo Google Sheets / Apps Script...</div>
@@ -238,6 +315,7 @@
     // 1. LÓGICA DO BANCO DE DADOS WEB (ESTOQUE ONLINE)
     // ==========================================
     let bancoProdutos = {};
+    let estoqueCarregado = false;
 
     function parseCSV(csv) {
       const linhas = [];
@@ -362,10 +440,14 @@
 
         statusElement.textContent = `✅ Estoque carregado do Google Sheets / DataShock (${total} peças prontas)`;
         statusElement.style.color = 'green';
+        estoqueCarregado = true;
+        return true;
       } catch (error) {
         console.warn('Aviso:', error);
+        estoqueCarregado = false;
         statusElement.textContent = '⚠️ Não foi possível carregar o estoque pelo Apps Script. Verifique a rota action=getEstoque.';
         statusElement.style.color = '#dc3545';
+        return false;
       }
     }
 
@@ -386,6 +468,11 @@
         return;
       }
       
+      if (!estoqueCarregado) {
+        alert('Aguarde o carregamento do estoque antes de buscar dados.');
+        return;
+      }
+
       const btnBusca = document.getElementById('btnBuscarGoogle');
       btnBusca.disabled = true;
       btnBusca.textContent = "⏳ Buscando no Google...";
@@ -482,15 +569,70 @@
     // ==========================================
     // 3. INICIALIZAÇÃO DA PÁGINA E ITENS
     // ==========================================
-    document.addEventListener("DOMContentLoaded", () => {
+    function setFormularioBloqueado(bloqueado) {
+      document.querySelectorAll('#requisicaoForm input, #requisicaoForm button, #requisicaoForm textarea, #requisicaoForm select')
+        .forEach(el => { el.disabled = bloqueado; });
+    }
+
+    function atualizarOverlayCarregamento(estado, mensagem = '') {
+      const overlay = document.getElementById('loadingOverlay');
+      const spinner = document.getElementById('loadingSpinner');
+      const title = document.getElementById('loadingTitle');
+      const text = document.getElementById('loadingText');
+      const retry = document.getElementById('btnRetryEstoque');
+
+      if (estado === 'carregando') {
+        overlay.classList.remove('hidden');
+        spinner.style.display = 'block';
+        retry.classList.remove('show');
+        title.textContent = 'Carregando estoque';
+        text.textContent = mensagem || 'Aguarde. O formulário será liberado somente depois que a aba DataShock carregar.';
+      }
+
+      if (estado === 'erro') {
+        overlay.classList.remove('hidden');
+        spinner.style.display = 'none';
+        retry.classList.add('show');
+        title.textContent = 'Erro ao carregar estoque';
+        text.textContent = mensagem || 'Não foi possível carregar a aba DataShock. O formulário continuará bloqueado para evitar códigos sem descrição, preço e estoque.';
+      }
+
+      if (estado === 'pronto') {
+        overlay.classList.add('hidden');
+      }
+    }
+
+    async function inicializarTela() {
+      estoqueCarregado = false;
+      setFormularioBloqueado(true);
+      atualizarOverlayCarregamento('carregando');
       document.getElementById('dataRequisicao').value = new Date().toISOString().split('T')[0];
-      carregarPlanilhaDeProdutos();
-      adicionarItem();
-    });
+
+      const carregou = await carregarPlanilhaDeProdutos();
+
+      if (!carregou) {
+        setFormularioBloqueado(true);
+        atualizarOverlayCarregamento('erro');
+        return;
+      }
+
+      if (document.querySelectorAll('.item-requisicao').length === 0) {
+        adicionarItem();
+      }
+
+      setFormularioBloqueado(false);
+      atualizarOverlayCarregamento('pronto');
+    }
+
+    document.addEventListener("DOMContentLoaded", inicializarTela);
 
     let itemCount = 0;
 
     function adicionarItem() {
+      if (!estoqueCarregado) {
+        alert('Aguarde o carregamento do estoque antes de adicionar produtos.');
+        return;
+      }
       itemCount++;
       const container = document.getElementById('containerItens');
       const itemDiv = document.createElement('div');
@@ -520,6 +662,10 @@
 
     // --- PROCV AUTOMÁTICO NA DIGITAÇÃO MANUAL ---
     function buscarProduto(inputElement, id) {
+      if (!estoqueCarregado) {
+        alert('Aguarde o estoque carregar antes de digitar códigos.');
+        return;
+      }
       let codDigitado = inputElement.value.trim();
       const linhaHTML = document.getElementById(`itemRow_${id}`);
       
