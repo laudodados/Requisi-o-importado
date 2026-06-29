@@ -213,7 +213,7 @@
     <div class="loading-card">
       <div class="loading-spinner" id="loadingSpinner"></div>
       <div class="loading-title" id="loadingTitle">Carregando estoque</div>
-      <div class="loading-text" id="loadingText">Aguarde. O banco de dados está sendo carregado.</div>
+      <div class="loading-text" id="loadingText">Aguarde. O formulário será liberado somente depois que a aba DataShock carregar.</div>
       <button type="button" class="loading-retry" id="btnRetryEstoque" onclick="inicializarTela()">Tentar carregar novamente</button>
     </div>
   </div>
@@ -438,7 +438,7 @@
         const total = Object.keys(bancoProdutos).length;
         if (total === 0) throw new Error('A rota getEstoque retornou vazia.');
 
-        statusElement.textContent = `✅ Estoque carregado (${total} peças carregadas)`;
+        statusElement.textContent = `✅ Estoque carregado do Google Sheets / DataShock (${total} peças prontas)`;
         statusElement.style.color = 'green';
         estoqueCarregado = true;
         return true;
@@ -586,7 +586,7 @@
         spinner.style.display = 'block';
         retry.classList.remove('show');
         title.textContent = 'Carregando estoque';
-        text.textContent = mensagem || 'Aguarde, o estoque está sendo carregado.';
+        text.textContent = mensagem || 'Aguarde. O formulário será liberado somente depois que a aba DataShock carregar.';
       }
 
       if (estado === 'erro') {
@@ -599,6 +599,32 @@
 
       if (estado === 'pronto') {
         overlay.classList.add('hidden');
+      }
+    }
+
+    function obterIdRelatorioDaUrl() {
+      const params = new URLSearchParams(window.location.search);
+      return (
+        params.get('buscaIdGoogle') ||
+        params.get('id') ||
+        params.get('agendamento') ||
+        params.get('ra') ||
+        ''
+      ).toString().trim();
+    }
+
+    async function aplicarIdRelatorioDaUrl() {
+      const idUrl = obterIdRelatorioDaUrl();
+      if (!idUrl) return;
+
+      const inputBusca = document.getElementById('buscaIdGoogle');
+      inputBusca.value = idUrl;
+
+      const params = new URLSearchParams(window.location.search);
+      const deveBuscarAutomaticamente = params.get('autobuscar') !== '0';
+
+      if (deveBuscarAutomaticamente) {
+        await buscarDadosGoogle();
       }
     }
 
@@ -622,6 +648,10 @@
 
       setFormularioBloqueado(false);
       atualizarOverlayCarregamento('pronto');
+
+      // Se veio do Kanban com ?id=123, ?agendamento=123 ou ?buscaIdGoogle=123,
+      // preenche o campo "ID do Relatório" e já executa a busca.
+      await aplicarIdRelatorioDaUrl();
     }
 
     document.addEventListener("DOMContentLoaded", inicializarTela);
