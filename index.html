@@ -145,7 +145,7 @@
 <body>
 
   <h1>Requisição de Material do CD</h1>
-  <div class="status-bd" id="statusBD">⏳ Conectando ao Banco de Dados (datashock.ods)...</div>
+  <div class="status-bd" id="statusBD">⏳ Conectando ao estoque online da aba DataShock...</div>
 
   <form id="requisicaoForm">
 
@@ -237,51 +237,109 @@
 
   <script>
     // ==========================================
-    // 1. LÓGICA DO BANCO DE DADOS LOCAL (DATASHOCK)
+    // 1. LÓGICA DO BANCO DE DADOS WEB (ESTOQUE ONLINE)
     // ==========================================
     let bancoProdutos = {};
 
+    function normalizarTexto(valor) {
+      return (valor || '')
+        .toString()
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+    }
+
+    function parseValorMonetario(valor) {
+      if (valor === undefined || valor === null || valor === '') return 0;
+
+      if (typeof valor === 'number') return valor;
+
+      const tratado = valor
+        .toString()
+        .replace(/[R$\s]/g, '')
+        .replace(/\./g, '')
+        .replace(',', '.');
+
+      return parseFloat(tratado) || 0;
+    }
+
+    function encontrarIndiceCabecalho(headers, opcoes, fallback) {
+      const headersNormalizados = headers.map(h => normalizarTexto(h));
+
+      for (const opcao of opcoes) {
+        const opcaoNormalizada = normalizarTexto(opcao);
+        const idx = headersNormalizados.findIndex(h => h === opcaoNormalizada || h.includes(opcaoNormalizada));
+        if (idx !== -1) return idx;
+      }
+
+      return fallback;
+    }
+
     async function carregarPlanilhaDeProdutos() {
       const statusElement = document.getElementById('statusBD');
+      bancoProdutos = {};
+
       try {
-        const response = await fetch('datashock.ods');
-        if (!response.ok) throw new Error("Arquivo não encontrado no servidor.");
-        
-        const arrayBuffer = await response.arrayBuffer();
-        const data = new Uint8Array(arrayBuffer);
-        const workbook = XLSX.read(data, {type: 'array'});
-        
-        const primeiraAba = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[primeiraAba];
-        
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
-        
-        for(let i = 1; i < jsonData.length; i++) {
-          let linha = jsonData[i];
-          if(linha && linha[0]) {
-            // Garante que a base local também seja formatada com 6 dígitos em zeros à esquerda
-            let cod = linha[0].toString().trim().padStart(6, '0');
-            bancoProdutos[cod] = {
-              descricao: linha[1] ? linha[1].toString() : "",       // Coluna B
-              tipo: linha[2] ? linha[2].toString() : "RP",          // Coluna C
-              valorUnitario: linha[7] ? parseFloat(linha[7]) : 0.00,// Coluna H
-              estoque: linha[8] !== undefined ? linha[8] : 0         // Coluna I (Estoque)
-            };
-          }
+        const urlEstoque = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(ABA_ESTOQUE)}`;
+
+        const response = await fetch(urlEstoque);
+        if (!response.ok) throw new Error("Não foi possível acessar a aba de estoque online.");
+
+        const csvEstoque = await response.text();
+
+        if (!csvEstoque || csvEstoque.toLowerCase().includes('invalid query')) {
+          throw new Error(`A aba '${ABA_ESTOQUE}' não foi encontrada ou não está pública para leitura.`);
         }
-        statusElement.textContent = `✅ Banco de Dados Local Carregado (${Object.keys(bancoProdutos).length} peças prontas)`;
+
+        const workbook = XLSX.read(csvEstoque, { type: 'string' });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+        if (!jsonData || jsonData.length < 2) {
+          throw new Error(`A aba '${ABA_ESTOQUE}' não possui dados suficientes.`);
+        }
+
+        const headers = jsonData[0] || [];
+
+        // Primeiro tenta localizar pelas colunas/cabeçalhos.
+        // Caso não encontre, mantém o padrão antigo do DataShock/datashock:
+        // A = Código do componente, B = Nome do Equipamento/Componente, C = Tipo, H = Preço, I = Estoque.
+        const idxCodigo = encontrarIndiceCabecalho(headers, ['codigo', 'cod', 'código', 'produto'], 0);
+        const idxDescricao = encontrarIndiceCabecalho(headers, ['descricao', 'descrição', 'produto', 'nome'], 1);
+        const idxTipo = encontrarIndiceCabecalho(headers, ['tipo'], 2);
+        const idxValor = encontrarIndiceCabecalho(headers, ['valor unitario', 'valor', 'preco', 'preço'], 7);
+        const idxEstoque = encontrarIndiceCabecalho(headers, ['estoque', 'saldo', 'quantidade disponivel', 'disponivel'], 8);
+
+        for (let i = 1; i < jsonData.length; i++) {
+          const linha = jsonData[i];
+          if (!linha || linha[idxCodigo] === undefined || linha[idxCodigo] === '') continue;
+
+          const cod = linha[idxCodigo].toString().trim().padStart(6, '0');
+
+          bancoProdutos[cod] = {
+            descricao: linha[idxDescricao] ? linha[idxDescricao].toString() : "",
+            tipo: linha[idxTipo] ? linha[idxTipo].toString() : "RP",
+            valorUnitario: parseValorMonetario(linha[idxValor]),
+            estoque: linha[idxEstoque] !== undefined && linha[idxEstoque] !== '' ? linha[idxEstoque] : 0
+          };
+        }
+
+        statusElement.textContent = `✅ Estoque online carregado da aba '${ABA_ESTOQUE}' (${Object.keys(bancoProdutos).length} peças prontas)`;
         statusElement.style.color = 'green';
       } catch (error) {
         console.warn("Aviso:", error);
-        statusElement.textContent = "⚠️ Não foi possível carregar 'datashock.ods'. O preenchimento manual das peças continua funcionando.";
+        statusElement.textContent = `⚠️ Não foi possível carregar o estoque online da aba '${ABA_ESTOQUE}'. O preenchimento manual das peças continua funcionando.`;
         statusElement.style.color = '#dc3545';
       }
     }
+
 
     // ==========================================
     // 2. INTEGRAÇÃO GOOGLE SHEETS (API PUBLICA CSV)
     // ==========================================
     const GOOGLE_SHEETS_ID = '1Txe61UvhFurTnllGhH8-ESKlriwLIA2zIHwxKg22EeA';
+    const ABA_ESTOQUE = 'DataShock';
 
     async function buscarDadosGoogle() {
       const idBusca = document.getElementById('buscaIdGoogle').value.trim();
@@ -374,7 +432,7 @@
                 inputCod.value = p.codigo;
                 inputQtd.value = p.qtd;
                 
-                // Dispara o PROCV do datashock.ods para aquela linha
+                // Dispara a busca no estoque online para aquela linha
                 buscarProduto(inputCod, itemCount);
             });
         } else {
