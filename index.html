@@ -213,7 +213,7 @@
     <div class="loading-card">
       <div class="loading-spinner" id="loadingSpinner"></div>
       <div class="loading-title" id="loadingTitle">Carregando estoque</div>
-      <div class="loading-text" id="loadingText">Aguarde. O formulário será liberado somente depois que a aba DataShock carregar.</div>
+      <div class="loading-text" id="loadingText">Aguarde. O banco de dados está sendo carregado.</div>
       <button type="button" class="loading-retry" id="btnRetryEstoque" onclick="inicializarTela()">Tentar carregar novamente</button>
     </div>
   </div>
@@ -438,7 +438,7 @@
         const total = Object.keys(bancoProdutos).length;
         if (total === 0) throw new Error('A rota getEstoque retornou vazia.');
 
-        statusElement.textContent = `✅ Estoque carregado do Google Sheets / DataShock (${total} peças prontas)`;
+        statusElement.textContent = `✅ Estoque carregado (${total} peças carregadas)`;
         statusElement.style.color = 'green';
         estoqueCarregado = true;
         return true;
