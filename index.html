@@ -2,2544 +2,1029 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Gerador de Laudo Técnico - Robôs</title>
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <title>Gerador de Requisição de Material - CD</title>
+  
   <style>
-    /* --- ESTILO GERAL E CORES --- */
+    /* --- ESTILO GERAL DO FORMULÁRIO (INPUT) --- */
     :root {
-      --cor-primaria: #007bff;
+      --cor-primaria: #002060;
       --cor-fundo: #8ad6cf;
       --cor-card: #ffffff;
       --cor-borda: #dee2e6;
       --cor-sombra: rgba(0, 0, 0, 0.1);
       --cor-texto: #495057;
       --cor-titulo: #212529;
+      --cor-sucesso: #28a745;
+      --cor-sucesso-hover: #218838;
+      --cor-perigo: #dc3545;
+      --cor-perigo-hover: #c82333;
+      --cor-google: #2e7d32;
+      --cor-google-hover: #1b5e20;
     }
 
     body { 
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Rubik", Roboto, Arial, sans-serif;
       margin: 0;
       padding: 20px;
       background-color: var(--cor-fundo);
       color: var(--cor-texto);
     }
 
-    #loader-overlay {
-      position: fixed; inset: 0; background: rgba(255,255,255,0.8);
-      display: none; justify-content: center; align-items: center; z-index: 9999;
-      flex-direction: column; font-weight: bold; color: var(--cor-primaria);
-    }
+    h1 { text-align: center; color: var(--cor-titulo); margin-bottom: 5px;}
+    .status-bd { text-align: center; font-size: 12px; font-weight: bold; margin-bottom: 20px; color: #002060; }
 
     .form-section {
-      border: 1px solid var(--cor-borda); padding: 20px; margin: 20px 0; 
-      border-radius: 8px; background-color: var(--cor-card); box-shadow: 0 4px 8px var(--cor-sombra);
-    }
-    .form-group { margin-bottom: 15px; }
-    .form-row { display: grid; grid-template-columns: 1fr 2fr; gap: 15px; }
-    label, .form-group > span { display: block; font-weight: bold; margin-bottom: 5px; }
-    input[type="text"], input[type="date"], input[type="time"], select, textarea {
-      width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid var(--cor-borda);
-      font-size: 16px; box-sizing: border-box; transition: border-color 0.2s;
-    }
-    input[type="text"]:focus, select:focus, textarea:focus { border-color: var(--cor-primaria); outline: none; }
-    textarea { resize: vertical; }
-
-    .checkbox-group label { display: inline-flex; width: auto; margin-right: 20px; font-weight: normal; }
-
-    #btnGerarLaudo {
-      width: 100%; padding: 15px; font-size: 18px; background-color: #28a745;
-      color: white; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.2s ease-in-out;
-    }
-    #btnGerarLaudo:hover { background-color: #218838; }
-
-    /* CSS DA PEÇA E PLACEHOLDER */
-    .peca-img { 
-      width: 60px; height: 60px; margin-right: 15px; object-fit: cover; border-radius: 8px; 
-      border: 1px solid var(--cor-borda); background: #fff; flex-shrink: 0;
-    }
-    .peca-img-placeholder { 
-      width: 60px; height: 60px; margin-right: 15px; border-radius: 8px; border: 1px solid var(--cor-borda); 
-      background: #f8f9fa; display: flex; align-items: center; justify-content: center; 
-      font-size: 20px; font-weight: bold; color: #adb5bd; flex-shrink: 0; text-transform: uppercase;
-    }
-
-    #pecasLista label {
-      display: flex; width: 100%; align-items: center; margin-bottom: 10px;
-      padding: 10px; border-radius: 8px; border: 1px solid transparent; transition: all 0.2s ease-in-out;
-    }
-    #pecasLista label:hover { background-color: #f8f9fa; border-color: var(--cor-borda); }
-    #pecasLista h4 { margin-top: 20px; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid var(--cor-primaria); color: var(--cor-titulo); }
-    
-    .peca-item { display: grid; grid-template-columns: 1fr auto; gap: 15px; align-items: center; margin-bottom: 15px; }
-    .opcoes-peca { display: none; align-items: center; gap: 20px; }
-
-    .cor-selecao { display: flex; gap: 5px; border: 1px solid var(--cor-borda); padding: 5px; border-radius: 8px; background-color: #f8f9fa; }
-    .cor-selecao label { font-weight: normal; cursor: pointer; padding: 5px 10px; border-radius: 4px; border: 1px solid transparent; transition: all 0.2s; }
-    .cor-selecao label:hover { background-color: #e9ecef; }
-    .cor-selecao input[value="verde"]:checked + label { background-color: #d4edda; color: #155724; border-color: #b1dfbb; font-weight: bold; }
-    .cor-selecao input[value="azul"]:checked + label { background-color: #cce5ff; color: #004085; border-color: #b8daff; font-weight: bold; }
-    .cor-selecao input[value="rosa"]:checked + label { background-color: #ebacdd; color: #ed3cc5; border-color: #f5c6cb; font-weight: bold; }
-    .cor-selecao input[type="radio"] { display: none; }
-
-    .quantidade-label { display: flex; align-items: center; gap: 8px; font-weight: normal; }
-    .quantidade-input { width: 40px; padding: 8px; text-align: center; }
-    .peca-info-texto { display: flex; flex-direction: column; gap: 6px; }
-
-    .estoque-badge {
-      display: inline-flex; align-items: center; width: fit-content; padding: 4px 8px;
-      border-radius: 999px; font-size: 13px; font-weight: bold; border: 1px solid var(--cor-borda);
-      background-color: #eef2f7; color: #334155;
-    }
-    .peca-item.estoque-baixo .estoque-badge { background-color: #fff3cd; border-color: #ffecb5; color: #664d03; }
-    .peca-item.estoque-zerado .estoque-badge { background-color: #f8d7da; border-color: #f5c2c7; color: #842029; }
-    .peca-item.estoque-zerado .peca-info, .peca-item.estoque-baixo .peca-info { border-color: currentColor; }
-
-    #previewFotos { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-    .preview-img { width: 150px; height: 150px; object-fit: cover; border-radius: 8px; border: 1px solid var(--cor-borda); }
-    .hidden { display: none; }
-  
-
-    /* ============================================================
-       VISUAL ATUALIZADO — aplicado sobre a versão corrigida
-    ============================================================ */
-    :root {
-      --navy-950: #071a33;
-      --navy-900: #0b2d52;
-      --navy-800: #0f3a68;
-      --blue-500: #1d6fb8;
-      --blue-400: #3b8bd4;
-      --page-dark: #1b1f20;
-      --card-dark: #171b1c;
-      --card-border: rgba(59, 139, 212, 0.22);
-      --field-dark: #1b1f20;
-      --field-border: #2b4260;
-      --field-focus: #20272b;
-      --text-main: #f3f6fb;
-      --text-soft: #c4c7cc;
-      --text-muted: #9aa3ad;
-      --success: #188643;
-      --success-dark: #137238;
-      --disabled-1: #59616c;
-      --disabled-2: #454b55;
-      --font-ui: "Inter", "Segoe UI", Arial, sans-serif;
-      --font-display: "Manrope", "Inter", "Segoe UI", Arial, sans-serif;
-    }
-
-    body {
-      margin: 0 !important;
-      min-height: 100vh;
-      padding: 0 0 64px !important;
-      background:
-        radial-gradient(900px 380px at 50% -130px, rgba(59,139,212,0.18), transparent 72%),
-        linear-gradient(180deg,
-          #071a33 0%,
-          #0a2545 16%,
-          #0d3158 29%,
-          #123a61 39%,
-          #173752 50%,
-          #1a2e3d 61%,
-          #1b262d 72%,
-          #1b1f20 86%,
-          #1b1f20 100%) !important;
-      background-attachment: fixed;
-      color: var(--text-main) !important;
-      font-family: var(--font-ui) !important;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    .topbar {
-      position: relative;
-      z-index: 1;
-      padding: 34px 24px 82px;
-      background: transparent;
-      box-shadow: none;
-      overflow: visible;
-    }
-
-    .topbar-inner {
-      width: min(1080px, 100%);
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-    }
-
-    .topbar h1 {
-      margin: 0;
-      color: #f5f8fc;
-      font-family: var(--font-display);
-      font-size: clamp(26px, 3vw, 34px);
-      font-weight: 800;
-      letter-spacing: -0.6px;
-      line-height: 1.1;
-    }
-
-    #laudoForm {
-      width: min(880px, calc(100% - 32px));
-      margin: -38px auto 0;
-      position: relative;
-      z-index: 2;
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
-
-    .form-section {
-      width: 100%;
-      margin: 0 !important;
-      padding: 26px 28px 28px !important;
-      background: var(--card-dark) !important;
-      border: 1px solid var(--card-border) !important;
-      border-radius: 18px !important;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18) !important;
-      color: var(--text-main) !important;
-      overflow: visible;
+      border: 1px solid var(--cor-borda); 
+      padding: 20px; 
+      margin: 20px auto; 
+      border-radius: 8px; 
+      background-color: var(--cor-card);
+      box-shadow: 0 4px 8px var(--cor-sombra);
+      max-width: 1100px;
     }
 
     .form-section h2 {
-      margin: 0 0 20px !important;
-      padding-bottom: 14px;
-      border-bottom: 1px solid rgba(59, 139, 212, 0.22);
-      color: var(--text-main) !important;
-      font-family: var(--font-display);
-      font-size: 18px !important;
-      font-weight: 800 !important;
-      letter-spacing: -0.2px;
+      margin-top: 0;
+      border-bottom: 2px solid var(--cor-primaria);
+      padding-bottom: 10px;
+      color: var(--cor-primaria);
+      font-size: 18px;
     }
 
-    .form-group {
-      margin-bottom: 15px !important;
+    .form-row { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
+      gap: 15px; 
+      margin-bottom: 15px; 
     }
-
-    .form-row {
-      display: grid !important;
-      grid-template-columns: 1fr 1.4fr !important;
-      gap: 18px !important;
+    
+    .form-group { margin-bottom: 10px; }
+    
+    label { 
+      display: block; 
+      font-weight: bold; 
+      margin-bottom: 5px; 
+      color: var(--cor-titulo); 
+      font-size: 14px;
     }
-
-    label,
-    .form-group > span {
-      display: block;
-      margin-bottom: 7px !important;
-      color: var(--text-soft) !important;
-      font-size: 13px !important;
-      font-weight: 700 !important;
-      letter-spacing: 0.1px;
-    }
-
-    input[type="text"],
-    input[type="date"],
-    input[type="time"],
-    input[type="number"],
-    select,
-    textarea {
-      width: 100% !important;
-      min-height: 44px;
-      padding: 11px 14px !important;
-      border: 1.5px solid var(--field-border) !important;
-      border-radius: 8px !important;
-      outline: none !important;
-      background-color: var(--field-dark) !important;
-      color: var(--text-main) !important;
-      font-family: var(--font-ui) !important;
-      font-size: 14.5px !important;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.12) !important;
-      transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease !important;
-    }
-
-    input[readonly] {
-      background-color: #20252a !important;
-      color: #aeb7c1 !important;
-      cursor: not-allowed !important;
+    
+    input[type="text"], input[type="date"], input[type="number"], textarea {
+      width: 100%; 
+      padding: 8px 10px; 
+      border-radius: 4px; 
+      border: 1px solid var(--cor-borda); 
+      font-size: 14px; 
+      box-sizing: border-box;
+      transition: border-color 0.2s;
     }
 
     textarea {
-      min-height: 108px;
       resize: vertical;
-      line-height: 1.55;
     }
 
-    input:focus,
-    select:focus,
-    textarea:focus {
-      background-color: var(--field-focus) !important;
-      border-color: var(--blue-400) !important;
-      box-shadow: 0 0 0 4px rgba(59,139,212,0.14) !important;
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--cor-primaria);
     }
 
-    input::placeholder,
-    textarea::placeholder {
-      color: #737b83 !important;
-    }
-
-    /* Setas dos selects corrigidas */
-    select {
-      appearance: none !important;
-      -webkit-appearance: none !important;
-      -moz-appearance: none !important;
-      padding-left: 14px !important;
-      padding-right: 44px !important;
-      background-image:
-        linear-gradient(45deg, transparent 50%, #8fa3bd 50%),
-        linear-gradient(135deg, #8fa3bd 50%, transparent 50%) !important;
-      background-position:
-        calc(100% - 22px) 50%,
-        calc(100% - 15px) 50% !important;
-      background-size:
-        7px 7px,
-        7px 7px !important;
-      background-repeat: no-repeat !important;
-    }
-
-    select::-ms-expand {
-      display: none;
-    }
-
-    select:focus {
-      background-image:
-        linear-gradient(45deg, transparent 50%, #3b8bd4 50%),
-        linear-gradient(135deg, #3b8bd4 50%, transparent 50%) !important;
-    }
-
-    .checkbox-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 9px;
-      margin-top: 4px;
-    }
-
-    .checkbox-group label {
-      display: inline-flex !important;
-      align-items: center;
-      gap: 9px;
-      width: auto !important;
-      margin: 0 !important;
-      padding: 9px 15px 9px 11px !important;
-      background: #20252a !important;
-      border: 1.5px solid var(--field-border) !important;
-      border-radius: 999px !important;
-      box-shadow: none !important;
-      font-size: 13px !important;
-      font-weight: 700 !important;
-      color: var(--text-soft) !important;
-      white-space: nowrap;
-      cursor: pointer;
-      transition: border-color 0.14s ease, background 0.14s ease, color 0.14s ease;
-    }
-
-    .checkbox-group label:hover {
-      border-color: var(--blue-400) !important;
-      color: #fff !important;
-      background: #232c33 !important;
-    }
-
-    input[type="checkbox"] {
-      appearance: none;
-      -webkit-appearance: none;
-      width: 18px;
-      height: 18px;
-      margin: 0;
-      border-radius: 5px;
-      background: #0f1417;
-      border: 1.6px solid #46576b;
-      position: relative;
-      cursor: pointer;
-      flex-shrink: 0;
-      transition: all 0.14s ease;
-    }
-
-    input[type="checkbox"]:checked {
-      background: var(--blue-500);
-      border-color: var(--blue-400);
-    }
-
-    input[type="checkbox"]:checked::after {
-      content: "";
-      position: absolute;
-      top: 3px;
-      left: 6px;
-      width: 4px;
-      height: 8px;
-      border: solid #fff;
-      border-width: 0 2px 2px 0;
-      transform: rotate(45deg);
-    }
-
-    /* Componentes maiores */
-    #pecasLista {
-      display: grid !important;
-      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)) !important;
-      gap: 16px !important;
-      margin-top: 4px;
-    }
-
-    #pecasLista h4 {
-      grid-column: 1 / -1;
-      margin: 10px 0 0 !important;
-      padding: 0 0 8px !important;
-      border-bottom: 1px solid rgba(59,139,212,0.22) !important;
-      color: #8fb8e6 !important;
-      font-size: 12.5px !important;
-      font-weight: 800 !important;
-      letter-spacing: 0.6px;
-      text-transform: uppercase;
-    }
-
-    .peca-item {
-      display: flex !important;
-      flex-direction: column;
-      justify-content: flex-start;
-      gap: 10px !important;
-      min-height: 220px !important;
-      padding: 14px !important;
-      margin: 0 !important;
-      background: #20252a !important;
-      border: 1.5px solid rgba(59,139,212,0.18) !important;
-      border-radius: 12px !important;
-      box-shadow: none !important;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-    }
-
-    .peca-item:hover {
-      background: #232a30 !important;
-      border-color: rgba(59,139,212,0.34) !important;
-    }
-
-    .peca-item.estoque-baixo {
-      border-color: #e8a020 !important;
-    }
-
-    .peca-item.estoque-zerado {
-      border-color: #d64545 !important;
-    }
-
-    #pecasLista label {
-      border: 0 !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      background: transparent !important;
-    }
-
-    .peca-info {
-      display: flex !important;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 10px !important;
-      width: 100%;
-      font-size: 13.5px !important;
-      font-weight: 700;
-      color: var(--text-main) !important;
-    }
-
-    .peca-info input[type="checkbox"] {
-      align-self: flex-end;
-    }
-
-    .peca-img,
-    .peca-img-placeholder {
-      width: 100% !important;
-      height: 118px !important;
-      margin: 0 !important;
-      object-fit: contain !important;
-      border-radius: 8px !important;
-      background: #fff !important;
-      border: 1px solid rgba(255,255,255,0.10) !important;
-      box-shadow: none !important;
-      padding: 8px !important;
-    }
-
-    .peca-img {
-      cursor: zoom-in;
-    }
-
-    .peca-img-placeholder {
-      display: flex !important;
-      align-items: center;
-      justify-content: center;
-      color: #5b6b82 !important;
-      font-size: 30px !important;
-      font-weight: 800 !important;
-    }
-
-    .peca-info-texto {
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-      color: var(--text-main);
-    }
-
-    .estoque-badge {
-      display: inline-flex;
-      align-items: center;
-      width: fit-content;
-      padding: 4px 8px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-      border: 1px solid rgba(255,255,255,0.10);
-      background-color: #26323d;
-      color: #c8d2de;
-    }
-
-    .peca-item.estoque-baixo .estoque-badge {
-      background-color: rgba(232,160,32,0.18);
-      border-color: rgba(232,160,32,0.45);
-      color: #ffd98a;
-    }
-
-    .peca-item.estoque-zerado .estoque-badge {
-      background-color: rgba(214,69,69,0.18);
-      border-color: rgba(214,69,69,0.45);
-      color: #ff9b9b;
-    }
-
-    .opcoes-peca {
-      display: none;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      width: 100%;
-      margin-top: auto;
-      padding-top: 8px;
-      border-top: 1px dashed rgba(255,255,255,0.14);
-    }
-
-    .quantidade-label {
-      display: inline-flex !important;
-      align-items: center;
+    /* ITENS DINÂMICOS */
+    .item-requisicao {
+      display: grid;
+      grid-template-columns: 1.2fr 3fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1.2fr auto;
       gap: 8px;
-      color: var(--text-soft) !important;
-      font-size: 12px !important;
-      font-weight: 700 !important;
-      white-space: nowrap;
-    }
-
-    .quantidade-input {
-      width: 52px !important;
-      min-height: 32px !important;
-      padding: 5px 7px !important;
-      text-align: center;
-      font-size: 13px !important;
-    }
-
-    .cor-selecao {
-      display: flex;
-      gap: 6px;
-      border: 0 !important;
-      padding: 0 !important;
-      background: transparent !important;
-    }
-
-    .cor-selecao input[type="radio"] {
-      display: none;
-    }
-
-    .cor-selecao label {
-      display: inline-flex !important;
-      align-items: center;
-      justify-content: center;
-      width: 24px !important;
-      height: 24px !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      border: 2px solid #fff !important;
-      outline: 1.5px solid #52606e;
-      border-radius: 50% !important;
-      font-size: 0 !important;
-      cursor: pointer;
-      box-shadow: none !important;
-    }
-
-    .cor-selecao label[for*="_v_"] { background: #21b92d !important; }
-    .cor-selecao label[for*="_a_"] { background: #205fe1 !important; }
-    .cor-selecao label[for*="_r_"] { background: #ff00ff !important; }
-
-    .cor-selecao input:checked + label {
-      outline-color: #8fb8e6;
-      outline-width: 2px;
-      transform: scale(1.10);
-    }
-
-    #previewFotos {
-      display: grid !important;
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important;
-      gap: 12px !important;
-      margin-top: 14px !important;
-    }
-
-    .preview-img {
-      width: 100% !important;
-      height: 120px !important;
-      object-fit: cover !important;
-      border-radius: 10px !important;
-      background: #20252a !important;
-      border: 1px solid rgba(59,139,212,0.22) !important;
-    }
-
-    input[type="file"] {
-      width: 100%;
-      min-height: 44px;
-      padding: 11px 14px;
+      align-items: end;
+      padding: 15px;
+      background-color: #f8f9fa;
+      border: 1px solid var(--cor-borda);
       border-radius: 8px;
-      border: 1.5px dashed var(--field-border);
-      background: #20252a;
-      color: var(--text-soft);
-      cursor: pointer;
+      margin-bottom: 10px;
+      transition: background-color 0.3s;
     }
 
-    #btnGerarLaudo {
-      width: min(280px, 100%) !important;
-      align-self: flex-end;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 54px;
-      padding: 14px 28px !important;
-      border: 0 !important;
-      border-radius: 12px !important;
-      background: linear-gradient(135deg, var(--success), var(--success-dark)) !important;
-      color: #fff !important;
-      font-family: var(--font-display);
-      font-size: 15.5px !important;
-      font-weight: 800 !important;
-      letter-spacing: 0.1px;
-      cursor: pointer;
-      box-shadow: 0 10px 24px rgba(31,157,85,0.28) !important;
-      transition: box-shadow 0.15s ease, filter 0.15s ease !important;
+    .item-requisicao.destaque-sucesso {
+      background-color: #e8f5e9;
+      border-color: var(--cor-sucesso);
     }
 
-    #btnGerarLaudo:hover {
-      filter: brightness(1.03);
-      box-shadow: 0 14px 30px rgba(31,157,85,0.34) !important;
-      background: linear-gradient(135deg, var(--success), var(--success-dark)) !important;
+    .item-requisicao label { font-size: 11px; }
+
+    /* BOTOES */
+    button { 
+      padding: 10px 15px; 
+      font-size: 14px; 
+      font-weight: bold; 
+      border: none; 
+      border-radius: 4px; 
+      cursor: pointer; 
+      transition: background-color 0.2s;
+    }
+    .btn-adicionar { background-color: var(--cor-primaria); color: white; margin-bottom: 15px; }
+    .btn-adicionar:hover { background-color: #001540; }
+    
+    .btn-remover { background-color: var(--cor-perigo); color: white; height: 35px; padding: 0 10px;}
+    .btn-remover:hover { background-color: var(--cor-perigo-hover); }
+    
+    .btn-principal { width: 100%; padding: 15px; font-size: 18px; background-color: var(--cor-sucesso); color: white; margin-top: 20px; }
+    .btn-principal:hover { background-color: var(--cor-sucesso-hover); }
+    
+    .action-container { max-width: 1100px; margin: 0 auto; }
+
+    /* Resultados visuais no form (Campos que preenchem sozinhos) */
+    .calc-display { background-color: #e9ecef; color: #495057; font-weight: bold; cursor: not-allowed; }
+
+    @media (max-width: 900px) {
+      .item-requisicao { grid-template-columns: 1fr 1fr; align-items: start; }
+      .item-requisicao .btn-remover { grid-column: span 2; width: 100%; }
+      .form-row.custom-row { grid-template-columns: 1fr !important; }
     }
 
-    #btnGerarLaudo.btn-disabled {
-      background: linear-gradient(135deg, var(--disabled-1), var(--disabled-2)) !important;
-      color: #c9d0d8 !important;
-      box-shadow: none !important;
-      cursor: not-allowed !important;
-      filter: none !important;
-      opacity: 0.92;
-      transform: none !important;
-    }
 
-    #btnGerarLaudo.btn-disabled:hover,
-    #btnGerarLaudo.btn-disabled:active {
-      background: linear-gradient(135deg, var(--disabled-1), var(--disabled-2)) !important;
-      box-shadow: none !important;
-      filter: none !important;
-      transform: none !important;
-    }
-
-    #loader-overlay {
-      background: rgba(7, 26, 51, 0.82) !important;
-      color: #8fb8e6 !important;
-      backdrop-filter: blur(5px);
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    /* Visualização em tela cheia das imagens dos componentes */
-    .image-lightbox {
+    /* BLOQUEIO DE TELA ENQUANTO O ESTOQUE CARREGA */
+    .loading-overlay {
       position: fixed;
       inset: 0;
-      display: none;
+      z-index: 99999;
+      display: flex;
       align-items: center;
       justify-content: center;
-      padding: 28px;
-      background: rgba(0, 0, 0, 0.78);
-      backdrop-filter: blur(6px);
-      z-index: 99999;
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(3px);
+      padding: 20px;
     }
 
-    .image-lightbox.show {
-      display: flex;
+    .loading-overlay.hidden {
+      display: none;
     }
 
-    .image-lightbox-content {
-      position: relative;
-      width: min(920px, 96vw);
-      max-height: 92vh;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      align-items: center;
-    }
-
-    .image-lightbox img {
-      max-width: 100%;
-      max-height: 78vh;
-      object-fit: contain;
-      border-radius: 16px;
-      background: #ffffff;
-      padding: 14px;
-      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
-    }
-
-    .image-lightbox-title {
-      max-width: 100%;
-      color: #ffffff;
-      font-family: var(--font-display);
-      font-size: 16px;
-      font-weight: 700;
+    .loading-card {
+      width: min(460px, 100%);
+      background: var(--cor-card);
+      color: var(--cor-texto);
+      border-radius: 12px;
+      padding: 26px;
       text-align: center;
-      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--cor-borda);
     }
 
-    .image-lightbox-close {
-      position: absolute;
-      top: -14px;
-      right: -14px;
+    .loading-spinner {
       width: 42px;
       height: 42px;
-      border: 0;
+      border: 4px solid #d7d7d7;
+      border-top-color: var(--cor-primaria);
       border-radius: 50%;
-      background: #ffffff;
-      color: #111827;
-      font-size: 25px;
-      line-height: 1;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
+      margin: 0 auto 16px;
+      animation: spin 0.8s linear infinite;
     }
 
-    .image-lightbox-close:hover {
-      filter: brightness(0.94);
-    }
-
-    @media (max-width: 860px) {
-      #laudoForm {
-        margin-top: -26px;
-      }
-
-      .form-section {
-        padding: 20px 18px 22px !important;
-      }
-
-      .form-row {
-        grid-template-columns: 1fr !important;
-      }
-
-      #btnGerarLaudo {
-        width: 100% !important;
-      }
-    }
-
-    @media (max-width: 560px) {
-      .topbar {
-        padding: 24px 16px 58px;
-      }
-
-      #laudoForm {
-        width: min(100% - 24px, 880px);
-        margin-top: -18px;
-      }
-
-      #pecasLista {
-        grid-template-columns: 1fr !important;
-      }
-
-      .peca-img,
-      .peca-img-placeholder {
-        height: 140px !important;
-      }
-
-      .opcoes-peca {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .quantidade-label {
-        justify-content: space-between;
-      }
-
-      .image-lightbox {
-        padding: 16px;
-      }
-
-      .image-lightbox-close {
-        top: -10px;
-        right: -6px;
-      }
-
-      .image-lightbox img {
-        max-height: 74vh;
-      }
-    }
-
-
-    /* Botão para alternar modo claro/noturno */
-    .topbar-simple {
-      position: relative;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .theme-toggle-btn {
-      position: absolute;
-      right: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      min-height: 38px;
-      padding: 8px 14px;
-      border: 1px solid rgba(255,255,255,0.18);
-      border-radius: 999px;
-      background: rgba(255,255,255,0.08);
-      color: #f5f8fc;
-      font-family: var(--font-ui);
-      font-size: 12.5px;
+    .loading-title {
+      font-size: 18px;
       font-weight: 800;
-      cursor: pointer;
-      backdrop-filter: blur(6px);
-      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      color: var(--cor-titulo);
+      margin-bottom: 8px;
     }
 
-    .theme-toggle-btn:hover {
-      background: rgba(255,255,255,0.14);
-      border-color: rgba(255,255,255,0.28);
+    .loading-text {
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 16px;
     }
 
-    .theme-icon {
-      font-size: 15px;
-      line-height: 1;
+    .loading-retry {
+      display: none;
+      background: var(--cor-google);
+      color: white;
+      margin-top: 8px;
     }
 
-    body.light-mode {
-      background:
-        radial-gradient(900px 380px at 50% -130px, rgba(29,111,184,0.16), transparent 72%),
-        linear-gradient(180deg, #eaf3ff 0%, #edf5ff 22%, #eef1f6 44%, #eef1f6 100%) !important;
-      color: #16202f !important;
+    .loading-retry.show {
+      display: inline-block;
     }
 
-    body.light-mode .topbar h1 {
-      color: #0b2d52 !important;
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
-
-    body.light-mode .theme-toggle-btn {
-      background: rgba(11,45,82,0.08);
-      border-color: rgba(11,45,82,0.16);
-      color: #0b2d52;
-    }
-
-    body.light-mode .theme-toggle-btn:hover {
-      background: rgba(11,45,82,0.13);
-      border-color: rgba(11,45,82,0.24);
-    }
-
-    body.light-mode .form-section {
-      background: #ffffff !important;
-      border-color: #e8ecf3 !important;
-      color: #16202f !important;
-      box-shadow: 0 10px 30px rgba(15,30,60,0.08) !important;
-    }
-
-    body.light-mode .form-section h2 {
-      color: #16202f !important;
-      border-bottom-color: #e8ecf3 !important;
-    }
-
-    body.light-mode label,
-    body.light-mode .form-group > span {
-      color: #16202f !important;
-    }
-
-    body.light-mode input[type="text"],
-    body.light-mode input[type="date"],
-    body.light-mode input[type="time"],
-    body.light-mode input[type="number"],
-    body.light-mode select,
-    body.light-mode textarea {
-      background-color: #f1f4f9 !important;
-      border-color: #dce2ec !important;
-      color: #16202f !important;
-      box-shadow: 0 1px 2px rgba(15,30,60,0.06) !important;
-    }
-
-    body.light-mode input[readonly] {
-      background-color: #e9ecef !important;
-      color: #5b6b82 !important;
-    }
-
-    body.light-mode input:focus,
-    body.light-mode select:focus,
-    body.light-mode textarea:focus {
-      background-color: #ffffff !important;
-      border-color: #1d6fb8 !important;
-      box-shadow: 0 0 0 4px rgba(29,111,184,0.12) !important;
-    }
-
-    body.light-mode input::placeholder,
-    body.light-mode textarea::placeholder {
-      color: #8593a8 !important;
-    }
-
-    body.light-mode select {
-      background-image:
-        linear-gradient(45deg, transparent 50%, #5b6b82 50%),
-        linear-gradient(135deg, #5b6b82 50%, transparent 50%) !important;
-    }
-
-    body.light-mode select:focus {
-      background-image:
-        linear-gradient(45deg, transparent 50%, #1d6fb8 50%),
-        linear-gradient(135deg, #1d6fb8 50%, transparent 50%) !important;
-    }
-
-    body.light-mode .checkbox-group label {
-      background: #f6f8fb !important;
-      border-color: #dce2ec !important;
-      color: #5b6b82 !important;
-    }
-
-    body.light-mode .checkbox-group label:hover {
-      background: #ffffff !important;
-      border-color: #3b8bd4 !important;
-      color: #16202f !important;
-    }
-
-    body.light-mode input[type="checkbox"] {
-      background: #ffffff;
-      border-color: #c3cbd8;
-    }
-
-    body.light-mode input[type="checkbox"]:checked {
-      background: #1d6fb8;
-      border-color: #3b8bd4;
-    }
-
-    body.light-mode .peca-item {
-      background: #f6f8fb !important;
-      border-color: #e8ecf3 !important;
-      color: #16202f !important;
-    }
-
-    body.light-mode .peca-item:hover {
-      background: #ffffff !important;
-      border-color: #dce2ec !important;
-    }
-
-    body.light-mode .peca-info,
-    body.light-mode .peca-info-texto {
-      color: #16202f !important;
-    }
-
-    body.light-mode #pecasLista h4 {
-      color: #0b2d52 !important;
-      border-bottom-color: #e8ecf3 !important;
-    }
-
-    body.light-mode .estoque-badge {
-      background-color: #eef2f7;
-      color: #334155;
-      border-color: #dce2ec;
-    }
-
-    body.light-mode .opcoes-peca {
-      border-top-color: #dce2ec;
-    }
-
-    body.light-mode .quantidade-label {
-      color: #5b6b82 !important;
-    }
-
-    body.light-mode input[type="file"] {
-      background: #f6f8fb;
-      color: #5b6b82;
-      border-color: #dce2ec;
-    }
-
-    body.light-mode .preview-img {
-      background: #f6f8fb !important;
-      border-color: #e8ecf3 !important;
-    }
-
-    body.light-mode #loader-overlay {
-      background: rgba(238,241,246,0.86) !important;
-      color: #0b2d52 !important;
-    }
-
-    @media (max-width: 760px) {
-      .theme-toggle-btn {
-        position: static;
-        transform: none;
-      }
-    }
-
-
-
-    /* ============================================================
-       AJUSTES MOBILE / RESPONSIVIDADE
-    ============================================================ */
-
-    html {
-      -webkit-text-size-adjust: 100%;
-    }
-
-    body {
-      overflow-x: hidden;
-    }
-
-    img {
-      max-width: 100%;
-      height: auto;
-    }
-
-    input,
-    select,
-    textarea,
-    button {
-      font: inherit;
-    }
-
-    /* tablets */
-    @media (max-width: 900px) {
-      #laudoForm {
-        width: min(100% - 24px, 880px) !important;
-        gap: 16px !important;
-      }
-
-      .form-section {
-        padding: 20px 18px 22px !important;
-        border-radius: 16px !important;
-      }
-
-      .form-row {
-        grid-template-columns: 1fr !important;
-        gap: 14px !important;
-      }
-
-      .checkbox-group {
-        gap: 8px !important;
-      }
-
-      .checkbox-group label {
-        min-height: 40px;
-      }
-
-      #pecasLista {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-      }
-
-      .peca-item {
-        min-height: 205px !important;
-      }
-
-      .opcoes-peca {
-        flex-wrap: wrap;
-      }
-
-      #btnGerarLaudo {
-        width: 100% !important;
-        min-height: 52px !important;
-      }
-    }
-
-    /* celular */
-    @media (max-width: 640px) {
-      body {
-        padding-bottom: 26px !important;
-      }
-
-      .topbar {
-        padding: 18px 12px 42px !important;
-      }
-
-      .topbar-inner,
-      .topbar-simple {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        justify-content: center !important;
-        text-align: center !important;
-        gap: 12px !important;
-      }
-
-      .topbar h1 {
-        font-size: clamp(23px, 6vw, 29px) !important;
-        line-height: 1.15 !important;
-      }
-
-      .theme-toggle-btn {
-        position: static !important;
-        transform: none !important;
-        width: 100% !important;
-        justify-content: center !important;
-        min-height: 42px !important;
-        padding: 10px 14px !important;
-      }
-
-      #laudoForm {
-        width: calc(100% - 16px) !important;
-        margin: -18px auto 0 !important;
-        gap: 14px !important;
-      }
-
-      .form-section {
-        padding: 16px 14px 18px !important;
-        border-radius: 14px !important;
-      }
-
-      .form-section h2 {
-        margin-bottom: 16px !important;
-        padding-bottom: 10px !important;
-        font-size: 16px !important;
-      }
-
-      .form-group {
-        margin-bottom: 13px !important;
-      }
-
-      label,
-      .form-group > span {
-        font-size: 12.5px !important;
-      }
-
-      input[type="text"],
-      input[type="date"],
-      input[type="time"],
-      input[type="number"],
-      select,
-      textarea,
-      input[type="file"] {
-        min-height: 44px !important;
-        padding: 11px 12px !important;
-        font-size: 14px !important;
-      }
-
-      select {
-        padding-right: 42px !important;
-        background-position:
-          calc(100% - 20px) 50%,
-          calc(100% - 13px) 50% !important;
-      }
-
-      textarea {
-        min-height: 104px !important;
-      }
-
-      .checkbox-group {
-        display: grid !important;
-        grid-template-columns: 1fr !important;
-        gap: 8px !important;
-      }
-
-      .checkbox-group label {
-        width: 100% !important;
-        justify-content: flex-start !important;
-        white-space: normal !important;
-        padding: 10px 12px !important;
-      }
-
-      #previewFotos {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        gap: 10px !important;
-      }
-
-      .preview-img {
-        height: 108px !important;
-      }
-
-      #pecasLista {
-        grid-template-columns: 1fr !important;
-        gap: 12px !important;
-      }
-
-      #pecasLista h4 {
-        margin-top: 4px !important;
-        font-size: 12px !important;
-      }
-
-      .peca-item {
-        min-height: auto !important;
-        padding: 12px !important;
-        gap: 10px !important;
-      }
-
-      .peca-info {
-        gap: 9px !important;
-        font-size: 13px !important;
-      }
-
-      .peca-img,
-      .peca-img-placeholder {
-        height: 150px !important;
-        padding: 8px !important;
-      }
-
-      .peca-info-texto {
-        gap: 6px !important;
-      }
-
-      .estoque-badge {
-        font-size: 11.5px !important;
-      }
-
-      .opcoes-peca {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        justify-content: flex-start !important;
-        gap: 10px !important;
-      }
-
-      .quantidade-label {
-        width: 100% !important;
-        justify-content: space-between !important;
-        font-size: 12px !important;
-      }
-
-      .quantidade-input {
-        width: 64px !important;
-      }
-
-      .cor-selecao {
-        justify-content: center !important;
-        width: 100% !important;
-        padding-top: 2px !important;
-      }
-
-      .cor-selecao label {
-        width: 28px !important;
-        height: 28px !important;
-      }
-
-      #btnGerarLaudo {
-        width: 100% !important;
-        min-height: 50px !important;
-        padding: 12px 18px !important;
-        font-size: 14.5px !important;
-        border-radius: 10px !important;
-      }
-
-      .image-lightbox {
-        padding: 14px !important;
-      }
-
-      .image-lightbox-content {
-        width: 100% !important;
-        max-height: 90vh !important;
-      }
-
-      .image-lightbox img {
-        max-height: 72vh !important;
-        padding: 10px !important;
-        border-radius: 12px !important;
-      }
-
-      .image-lightbox-title {
-        font-size: 14px !important;
-      }
-
-      .image-lightbox-close {
-        top: -8px !important;
-        right: -2px !important;
-        width: 38px !important;
-        height: 38px !important;
-        font-size: 22px !important;
-      }
-    }
-
-    /* celular pequeno */
-    @media (max-width: 400px) {
-      .topbar {
-        padding: 16px 10px 38px !important;
-      }
-
-      #laudoForm {
-        width: calc(100% - 12px) !important;
-      }
-
-      .form-section {
-        padding: 14px 12px 16px !important;
-      }
-
-      .topbar h1 {
-        font-size: 22px !important;
-      }
-
-      .theme-toggle-btn {
-        min-height: 40px !important;
-        font-size: 12px !important;
-      }
-
-      input[type="text"],
-      input[type="date"],
-      input[type="time"],
-      input[type="number"],
-      select,
-      textarea,
-      input[type="file"] {
-        font-size: 13.5px !important;
-      }
-
-      #previewFotos {
-        grid-template-columns: 1fr !important;
-      }
-
-      .preview-img {
-        height: 120px !important;
-      }
-
-      .peca-img,
-      .peca-img-placeholder {
-        height: 138px !important;
-      }
-    }
-
-
-
-    /* ============================================================
-       CORREÇÃO MOBILE REAL: evita o celular reduzir a página inteira
-    ============================================================ */
-
-    html,
-    body {
-      width: 100%;
-      max-width: 100%;
-      overflow-x: hidden !important;
-    }
-
-    @media (max-width: 700px) {
-      body {
-        background-attachment: scroll !important;
-      }
-
-      .topbar {
-        padding: 22px 14px 44px !important;
-      }
-
-      .topbar h1 {
-        font-size: 30px !important;
-        line-height: 1.12 !important;
-      }
-
-      .theme-toggle-btn {
-        width: 100% !important;
-        min-height: 48px !important;
-        font-size: 15px !important;
-        border-radius: 14px !important;
-      }
-
-      #laudoForm {
-        width: calc(100vw - 20px) !important;
-        max-width: none !important;
-        margin: -18px auto 0 !important;
-        gap: 16px !important;
-      }
-
-      .form-section {
-        width: 100% !important;
-        padding: 20px 16px 22px !important;
-        border-radius: 16px !important;
-      }
-
-      .form-section h2 {
-        font-size: 22px !important;
-        line-height: 1.2 !important;
-        margin-bottom: 18px !important;
-      }
-
-      label,
-      .form-group > span {
-        font-size: 16px !important;
-        line-height: 1.3 !important;
-        margin-bottom: 8px !important;
-      }
-
-      input[type="text"],
-      input[type="date"],
-      input[type="time"],
-      input[type="number"],
-      select,
-      textarea,
-      input[type="file"] {
-        min-height: 54px !important;
-        font-size: 17px !important;
-        line-height: 1.35 !important;
-        padding: 14px 14px !important;
-        border-radius: 12px !important;
-      }
-
-      select {
-        padding-right: 48px !important;
-        background-position:
-          calc(100% - 24px) 50%,
-          calc(100% - 16px) 50% !important;
-        background-size:
-          8px 8px,
-          8px 8px !important;
-      }
-
-      textarea {
-        min-height: 130px !important;
-      }
-
-      .form-row {
-        grid-template-columns: 1fr !important;
-        gap: 14px !important;
-      }
-
-      .checkbox-group {
-        grid-template-columns: 1fr !important;
-      }
-
-      .checkbox-group label {
-        min-height: 50px !important;
-        font-size: 16px !important;
-        padding: 12px 14px !important;
-        border-radius: 14px !important;
-      }
-
-      input[type="checkbox"] {
-        width: 22px !important;
-        height: 22px !important;
-      }
-
-      input[type="checkbox"]:checked::after {
-        top: 4px !important;
-        left: 7px !important;
-        width: 5px !important;
-        height: 10px !important;
-      }
-
-      #pecasLista {
-        grid-template-columns: 1fr !important;
-        gap: 14px !important;
-      }
-
-      #pecasLista h4 {
-        font-size: 15px !important;
-      }
-
-      .peca-item {
-        padding: 16px !important;
-        border-radius: 16px !important;
-      }
-
-      .peca-info {
-        font-size: 17px !important;
-        line-height: 1.35 !important;
-      }
-
-      .peca-img,
-      .peca-img-placeholder {
-        height: 190px !important;
-        border-radius: 14px !important;
-      }
-
-      .peca-img-placeholder {
-        font-size: 42px !important;
-      }
-
-      .estoque-badge {
-        font-size: 14px !important;
-        padding: 6px 10px !important;
-      }
-
-      .opcoes-peca {
-        gap: 12px !important;
-      }
-
-      .quantidade-label {
-        font-size: 16px !important;
-      }
-
-      .quantidade-input {
-        width: 78px !important;
-        min-height: 48px !important;
-        font-size: 17px !important;
-      }
-
-      .cor-selecao label {
-        width: 34px !important;
-        height: 34px !important;
-      }
-
-      #previewFotos {
-        grid-template-columns: 1fr 1fr !important;
-        gap: 12px !important;
-      }
-
-      .preview-img {
-        height: 150px !important;
-        border-radius: 14px !important;
-      }
-
-      #btnGerarLaudo {
-        min-height: 58px !important;
-        font-size: 17px !important;
-        border-radius: 14px !important;
-      }
-    }
-
-    @media (max-width: 420px) {
-      .topbar h1 {
-        font-size: 28px !important;
-      }
-
-      #laudoForm {
-        width: calc(100vw - 14px) !important;
-      }
-
-      .form-section {
-        padding: 18px 14px 20px !important;
-      }
-
-      .form-section h2 {
-        font-size: 20px !important;
-      }
-
-      label,
-      .form-group > span {
-        font-size: 15.5px !important;
-      }
-
-      input[type="text"],
-      input[type="date"],
-      input[type="time"],
-      input[type="number"],
-      select,
-      textarea,
-      input[type="file"] {
-        font-size: 16.5px !important;
-      }
-
-      .peca-img,
-      .peca-img-placeholder {
-        height: 175px !important;
-      }
-    }
-
-</style>
+  </style>
 </head>
 <body>
-  
-  <div id="loader-overlay">
-      <svg width="40" height="40" viewBox="0 0 50 50" style="margin-bottom:10px;">
-          <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="31.4 31.4" stroke-linecap="round">
-              <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" keyTimes="0;1" values="0 25 25;360 25 25"></animateTransform>
-          </circle>
-      </svg>
-      Sincronizando dados ao vivo com a Planilha...
-  </div>
 
-  <div class="topbar">
-    <div class="topbar-inner topbar-simple">
-      <h1>Gerador de relatório</h1>
-      <button type="button" class="theme-toggle-btn" id="themeToggleBtn" aria-label="Alternar modo claro e noturno">
-        <span class="theme-icon">☀️</span>
-        <span class="theme-label">Modo claro</span>
-      </button>
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-card">
+      <div class="loading-spinner" id="loadingSpinner"></div>
+      <div class="loading-title" id="loadingTitle">Carregando estoque</div>
+      <div class="loading-text" id="loadingText">Aguarde. O formulário será liberado somente depois que a aba DataShock carregar.</div>
+      <button type="button" class="loading-retry" id="btnRetryEstoque" onclick="inicializarTela()">Tentar carregar novamente</button>
     </div>
   </div>
 
-  <form id="laudoForm">
-    <div class="form-section">
-      <h2>Informações Gerais</h2>
-      <div class="form-group">
-        <label for="cliente">Cliente:</label>
-        <input type="text" id="cliente" required>
-      </div>
-      <div class="form-group">
-        <label for="ra">RA/ID (Agendamento):</label>
-        <input type="text" id="ra" required readonly style="background:#e9ecef; cursor:not-allowed;">
-      </div>
-      <div class="form-group">
-        <label for="dataEntrada">Data de Entrada:</label>
-        <input type="date" id="dataEntrada" required>
-      </div>
-      <div class="form-group">
-        <label for="horaEntrada">Hora de Entrada:</label>
-        <input type="time" id="horaEntrada" required>
+
+  <h1>Requisição de Material do CD</h1>
+  <div class="status-bd" id="statusBD">⏳ Conectando ao estoque online pelo Google Sheets / Apps Script...</div>
+
+  <form id="requisicaoForm">
+
+    <div class="form-section" style="background-color: #e8f5e9; border-color: var(--cor-google);">
+      <h2 style="color: var(--cor-google); border-bottom-color: var(--cor-google);">Integração SAS Automática</h2>
+      <div class="form-row" style="grid-template-columns: 1fr auto; align-items: end;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label>ID do Relatório (Google Sheets):</label>
+          <input type="text" id="buscaIdGoogle" placeholder="Digite o ID e clique em Buscar...">
+        </div>
+        <button type="button" id="btnBuscarGoogle" onclick="buscarDadosGoogle()" style="background-color: var(--cor-google); color: white; height: 38px;">🔍 Buscar Dados</button>
       </div>
     </div>
-
+    
     <div class="form-section">
-      <h2>Dados do Equipamento</h2>
-      
+      <h2>Dados do Solicitante</h2>
       <div class="form-row">
         <div class="form-group">
-          <label for="codigoMaquina">Código do Equipamento (Digite para buscar):</label>
-          <input type="text" id="codigoMaquina" required placeholder="Ex: RB2-001">
+          <label>Nome do Solicitante:</label>
+          <input type="text" id="nomeSolicitante" required placeholder="Ex: MATHEUS">
         </div>
         <div class="form-group">
-          <label for="nomeMaquina">Nome do Equipamento:</label>
-          <input type="text" id="nomeMaquina" required readonly style="background:#e9ecef; cursor:not-allowed;" placeholder="Nome automático baseado no código...">
-        </div>
-      </div>
-
-       <div class="form-group">
-        <label for="codRobo">Código do Robô:</label>
-        <input type="text" id="codRobo">
-      </div>
-      <div class="form-group">
-        <label for="codFonte">Código da Fonte:</label>
-        <input type="text" id="codFonte">
-      </div>
-      <div class="form-group">
-        <label for="codMotor">Código do Motor:</label>
-        <input type="text" id="codMotor">
-      </div>
-      <div class="form-group">
-        <label for="codBateria">Código da Bateria:</label>
-        <input type="text" id="codBateria">
-      </div>
-
-      <div class="form-group">
-        <label for="garantia">Está em Garantia?:</label>
-        <select id="garantia" required>
-         <option value="">-- Escolha --</option>
-         <option value="SIM">SIM</option>
-         <option value="NÃO">NÃO</option>
-      </select>
-      </div>
-
-      <div class="form-group">
-        <span>Acessórios Inclusos:</span>
-        <div class="checkbox-group">
-          <label><input type="checkbox" name="acessorios" value="Caixa"> Caixa</label>
-          <label><input type="checkbox" name="acessorios" value="Caddy"> Caddy</label>
-          <label><input type="checkbox" name="acessorios" value="Fonte"> Fonte</label>
-          <label><input type="checkbox" name="acessorios" value="Filtro"> Filtro</label>
-          <label><input type="checkbox" name="acessorios" value="Controle"> Controle</label>
-          <label><input type="checkbox" name="acessorios" value="Gancho"> Gancho</label>
-          <label><input type="checkbox" name="acessorios" value="Trava Rotor"> Trava Rotor</label>
-          <label><input type="checkbox" name="acessorios" value="Carregador"> Carregador</label>
-          <label><input type="checkbox" name="acessorios" value="Manual"> Manual</label>
-        </div>
-      </div>
-    </div>
-    
-    <div class="form-section">
-        <h2>Análise Técnica</h2>
-        <div class="form-group">
-            <label for="defeitoRelatado">Defeito Relatado pelo Cliente:</label>
-            <textarea id="defeitoRelatado" rows="4" required></textarea>
+          <label>Departamento / Setor:</label>
+          <input type="text" id="departamento" required placeholder="Ex: ASSISTÊNCIA">
         </div>
         <div class="form-group">
-            <label for="obsTecnicas">Observações Técnicas:</label>
-            <textarea id="obsTecnicas" rows="6" required></textarea>
+          <label>Data:</label>
+          <input type="date" id="dataRequisicao" required>
         </div>
-        
-        <div class="form-group">
-            <label for="selecaoServico">Classificação do Serviço (Mão de Obra):</label>
-            <select id="selecaoServico" required disabled>
-                <option value="">-- O equipamento ainda não foi identificado --</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="obsGerais">Observações Gerais:</label>
-            <textarea id="obsGerais" rows="3"></textarea>
-        </div>
-    </div>
-
-    <div class="form-section hidden" id="pecasBox">
-        <h2>Componentes para Substituição</h2>
-        <div id="pecasLista"></div>
+      </div>
     </div>
 
     <div class="form-section">
-      <h2>Fotos do Equipamento</h2>
-      <div class="form-group">
-        <label for="fotos">Carregar fotos (múltiplas):</label>
-        <input type="file" id="fotos" multiple accept="image/*">
-        <div id="previewFotos"></div>
+      <h2>Análise Técnica / Dados do Equipamento</h2>
+      <div class="form-row" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr;">
+        <div class="form-group">
+          <label>Cliente:</label>
+          <input type="text" id="cliente" required placeholder="Ex: G.S. PISCINAS">
+        </div>
+        <div class="form-group">
+          <label>Equipamento:</label>
+          <input type="text" id="nomeEquipamento" required placeholder="Ex: RB6">
+        </div>
+        <div class="form-group">
+          <label>ID:</label>
+          <input type="text" id="idEquipamento" required placeholder="Ex: 57949">
+        </div>
+        <div class="form-group">
+          <label>Orçamento:</label>
+          <input type="text" id="orcamento" placeholder="Ex: Aprovado">
+        </div>
+        <div class="form-group">
+          <label>OS (Manual):</label>
+          <input type="text" id="osEquipamento" required placeholder="Ex: 29252">
+        </div>
+      </div>
+
+      <div class="form-row" style="grid-template-columns: 1fr;">
+        <div class="form-group">
+          <label>Números de Série (Robô | Fonte | Motor):</label>
+          <input type="text" id="numeroSerie" required placeholder="Preenchimento automático via ID...">
+        </div>
+      </div>
+      
+      <div class="form-row custom-row" style="grid-template-columns: 1fr 2fr;">
+        <div class="form-group">
+          <label>Forma de Pagamento:</label>
+          <input type="text" id="formaPagamento" placeholder="Ex: PIX, Boleto 30 dias...">
+        </div>
+        <div class="form-group">
+          <label>Observações:</label>
+          <textarea id="observacoes" rows="2" placeholder="Insira as observações ou deixe em branco para preencher à mão..."></textarea>
+        </div>
       </div>
     </div>
 
-    <button type="button" id="btnGerarLaudo" onclick="gerarLaudo()">Gerar Laudo Técnico</button>
+    <div class="form-section">
+      <h2>Produtos Requisitados</h2>
+      <button type="button" class="btn-adicionar" onclick="adicionarItem()">+ Adicionar Produto Manualmente</button>
+      
+      <div id="containerItens">
+        </div>
+    </div>
+
+    <div class="action-container">
+      <button type="button" class="btn-principal" onclick="gerarRequisicao()">Gerar PDF / Imprimir Documento</button>
+    </div>
   </form>
 
-<script>
-// --- CONFIGURAÇÃO DOS SERVIÇOS (Mão de Obra Fixa) ---
-const tabelaServicos = {
-    residencial: [
-        { nivel: "Simples",  codigo: "27792", desc: "SERVIÇO CONSERTO ROBÔ RES NL1", detalhe: "Serviços de manutenção corretiva e preventiva (Fonte, Filtro e Limpeza)." },
-        { nivel: "Moderado", codigo: "27793", desc: "SERVIÇO CONSERTO ROBÔ RES NL2", detalhe: "Serviços de manutenção corretiva (Motor e Cabo)." },
-        { nivel: "Complexo", codigo: "27794", desc: "SERVIÇO CONSERTO ROBÔ RES NL3", detalhe: "Serviços de manutenção corretiva (Engrenagens, Carenagem e Correias)." }
-    ],
-    comercial: [
-        { nivel: "Simples",  codigo: "27789", desc: "SERVIÇO CONSERTO ROBÔ COML NL1", detalhe: "Serviços de manutenção corretiva e preventiva (Fonte, Filtro e Limpeza)." },
-        { nivel: "Moderado", codigo: "27790", desc: "SERVIÇO CONSERTO ROBÔ COML NL2", detalhe: "Serviços de manutenção corretiva (Motor e Cabo)." },
-        { nivel: "Complexo", codigo: "27791", desc: "SERVIÇO CONSERTO ROBÔ COML NL3", detalhe: "Serviços de manutenção corretiva (Engrenagens, Carenagem e Correias)." }
-    ]
-};
+  <script>
+    // ==========================================
+    // 1. LÓGICA DO BANCO DE DADOS WEB (ESTOQUE ONLINE)
+    // ==========================================
+    let bancoProdutos = {};
+    let estoqueCarregado = false;
 
-const GOOGLE_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycby71jdg4zcudOYmfj_yI1_a-K_KCtuw-1EoX14ki61y8Co681HHSFWOdXtsQPcNpP-xvg/exec';
-const LIMITE_ESTOQUE_BAIXO = 2;
-let estoquePorProduto = {};
-let nomesPorProduto = {}; 
-let codigosPorNomeProduto = {};
-let estoqueCarregado = false;
+    function parseCSV(csv) {
+      const linhas = [];
+      let linha = [];
+      let campo = '';
+      let dentroAspas = false;
 
-function normalizarTextoChave(texto) {
-    return String(texto || '')
-        .normalize('NFD')
-        .replace(/[̀-ͯ]/g, '')
-        .replace(/\s+/g, ' ')
+      for (let i = 0; i < csv.length; i++) {
+        const char = csv[i];
+        const prox = csv[i + 1];
+
+        if (char === '"' && dentroAspas && prox === '"') {
+          campo += '"';
+          i++;
+        } else if (char === '"') {
+          dentroAspas = !dentroAspas;
+        } else if (char === ',' && !dentroAspas) {
+          linha.push(campo);
+          campo = '';
+        } else if ((char === '\n' || char === '\r') && !dentroAspas) {
+          if (char === '\r' && prox === '\n') i++;
+          linha.push(campo);
+          if (linha.some(valor => valor !== '')) linhas.push(linha);
+          linha = [];
+          campo = '';
+        } else {
+          campo += char;
+        }
+      }
+
+      linha.push(campo);
+      if (linha.some(valor => valor !== '')) linhas.push(linha);
+      return linhas;
+    }
+
+    async function carregarAbaCSV(nomeAba) {
+      const url = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(nomeAba)}`;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Não foi possível acessar a aba '${nomeAba}' no Google Sheets.`);
+
+      const csv = await response.text();
+      if (!csv || csv.toLowerCase().includes('invalid query')) {
+        throw new Error(`A aba '${nomeAba}' não foi encontrada ou não está pública para leitura.`);
+      }
+
+      return parseCSV(csv);
+    }
+
+    function normalizarTexto(valor) {
+      return (valor || '')
+        .toString()
         .trim()
-        .toUpperCase();
-}
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+    }
 
-function obterVariacoesCodigo(codigo) {
-    const codigoLimpo = String(codigo || '').trim();
-    if (!codigoLimpo) return [];
-    const semZeros = codigoLimpo.replace(/^0+/, '') || codigoLimpo;
-    const comZeros = codigoLimpo.padStart(6, '0');
-    return [...new Set([codigoLimpo, semZeros, comZeros])];
-}
+    function parseValorMonetario(valor) {
+      if (valor === undefined || valor === null || valor === '') return 0;
 
-function obterNomeProdutoPorCodigo(codigo) {
-    for (const variacao of obterVariacoesCodigo(codigo)) {
-        if (Object.prototype.hasOwnProperty.call(nomesPorProduto, variacao)) {
-            return nomesPorProduto[variacao];
+      if (typeof valor === 'number') return valor;
+
+      const tratado = valor
+        .toString()
+        .replace(/[R$\s]/g, '')
+        .replace(/\./g, '')
+        .replace(',', '.');
+
+      return parseFloat(tratado) || 0;
+    }
+
+    function encontrarIndiceCabecalho(headers, opcoes, fallback) {
+      const headersNormalizados = headers.map(h => normalizarTexto(h));
+
+      for (const opcao of opcoes) {
+        const opcaoNormalizada = normalizarTexto(opcao);
+        const idx = headersNormalizados.findIndex(h => h === opcaoNormalizada || h.includes(opcaoNormalizada));
+        if (idx !== -1) return idx;
+      }
+
+      return fallback;
+    }
+
+    async function carregarPlanilhaDeProdutos() {
+      const statusElement = document.getElementById('statusBD');
+      bancoProdutos = {};
+
+      try {
+        // Agora o estoque vem EXCLUSIVAMENTE do Apps Script / Google Sheets.
+        // Rota usada no Apps Script: doGet?action=getEstoque
+        const urlEstoque = `${WEB_APP_URL}?action=getEstoque&_=${Date.now()}`;
+        const response = await fetch(urlEstoque, { cache: 'no-store' });
+        if (!response.ok) throw new Error('Não foi possível acessar o Apps Script de estoque.');
+
+        const estoqueOnline = await response.json();
+        if (estoqueOnline.error || estoqueOnline.erro) {
+          throw new Error(estoqueOnline.error || estoqueOnline.erro);
         }
-    }
-    return null;
-}
 
-function reconstruirIndiceCodigosPorNome() {
-    codigosPorNomeProduto = {};
-    Object.entries(nomesPorProduto || {}).forEach(([codigo, nome]) => {
-        const chave = normalizarTextoChave(nome);
-        if (chave && !codigosPorNomeProduto[chave]) {
-            codigosPorNomeProduto[chave] = String(codigo).trim();
-        }
-    });
-}
+        const nomes = estoqueOnline.nomes || {};
+        const estoques = estoqueOnline.estoque || {};
 
-function resolverComponentePeloBanco(peca) {
-    const codigoPlanilha = String(peca.codigo || '').trim();
-    const nomePlanilha = String(peca.nome || peca.descricao || peca.componente || '').trim();
+        // Estes campos já ficam preparados caso você atualize o Apps Script
+        // para retornar também Tipo e Preço da aba DataShock.
+        const tipos = estoqueOnline.tipos || estoqueOnline.tipo || {};
+        const precos = estoqueOnline.precos || estoqueOnline.preco || estoqueOnline.precosUnitarios || {};
 
-    // Mantém opções manuais, como "Sem anomalia", sem forçar código.
-    if (!codigoPlanilha && normalizarTextoChave(nomePlanilha).includes('SEM ANOMALIA')) {
-        return { codigo: '', nome: nomePlanilha || 'Sem anomalia' };
-    }
+        Object.keys(nomes).forEach(codigoOriginal => {
+          const cod = codigoOriginal.toString().trim().padStart(6, '0');
+          const codigoSemZero = codigoOriginal.toString().trim().replace(/^0+/, '');
 
-    // 1) Se a Planilha 2 já trouxe um código válido, usa esse código,
-    // mas troca a descrição pelo nome oficial do banco DataShock.
-    const nomeOficialPorCodigo = obterNomeProdutoPorCodigo(codigoPlanilha);
-    if (codigoPlanilha && nomeOficialPorCodigo) {
-        return { codigo: codigoPlanilha, nome: nomeOficialPorCodigo };
-    }
-
-    // 2) Se a Planilha 2 trouxe apenas o nome do componente, procura o código no banco oficial.
-    const chaveNome = normalizarTextoChave(nomePlanilha);
-    if (chaveNome && codigosPorNomeProduto[chaveNome]) {
-        const codigoOficial = codigosPorNomeProduto[chaveNome];
-        return { codigo: codigoOficial, nome: obterNomeProdutoPorCodigo(codigoOficial) || nomePlanilha };
-    }
-
-    // 3) Tolerância para nomes com pequenas diferenças: tenta encontrar por inclusão.
-    if (chaveNome) {
-        const encontrado = Object.entries(nomesPorProduto || {}).find(([, nomeBanco]) => {
-            const chaveBanco = normalizarTextoChave(nomeBanco);
-            return chaveBanco && (chaveBanco.includes(chaveNome) || chaveNome.includes(chaveBanco));
+          bancoProdutos[cod] = {
+            descricao: nomes[codigoOriginal] || nomes[cod] || '',
+            tipo: tipos[codigoOriginal] || tipos[cod] || tipos[codigoSemZero] || 'RP',
+            valorUnitario: parseValorMonetario(precos[codigoOriginal] || precos[cod] || precos[codigoSemZero] || 0),
+            estoque: estoques[codigoOriginal] ?? estoques[cod] ?? estoques[codigoSemZero] ?? 0
+          };
         });
-        if (encontrado) {
-            return { codigo: String(encontrado[0]).trim(), nome: encontrado[1] };
-        }
+
+        const total = Object.keys(bancoProdutos).length;
+        if (total === 0) throw new Error('A rota getEstoque retornou vazia.');
+
+        statusElement.textContent = `✅ Estoque carregado do Google Sheets / DataShock (${total} peças prontas)`;
+        statusElement.style.color = 'green';
+        estoqueCarregado = true;
+        return true;
+      } catch (error) {
+        console.warn('Aviso:', error);
+        estoqueCarregado = false;
+        statusElement.textContent = '⚠️ Não foi possível carregar o estoque pelo Apps Script. Verifique a rota action=getEstoque.';
+        statusElement.style.color = '#dc3545';
+        return false;
+      }
     }
 
-    // Fallback: não trava o laudo, mas mantém o que veio da estrutura.
-    return { codigo: codigoPlanilha, nome: nomePlanilha || obterNomeProdutoPorCodigo(codigoPlanilha) || 'Componente não identificado no banco' };
-}
 
-// ============================================================
-// INICIALIZAÇÃO E INTEGRAÇÃO GOOGLE SHEETS
-// ============================================================
-document.addEventListener('DOMContentLoaded', () => {
-    const loader = document.getElementById('loader-overlay');
-    loader.style.display = 'flex';
+    // ==========================================
+    // 2. INTEGRAÇÃO GOOGLE SHEETS (API PUBLICA CSV)
+    // ==========================================
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby71jdg4zcudOYmfj_yI1_a-K_KCtuw-1EoX14ki61y8Co681HHSFWOdXtsQPcNpP-xvg/exec';
 
-    Promise.all([
-        fetch(`${GOOGLE_WEBAPP_URL}?action=getEstoque`).then(res => res.json()),
-        fetchAgendamentoSeExistir()
-    ]).then(([dadosEstoque, dadosAgendamento]) => {
-        
-        if (dadosEstoque && !dadosEstoque.error) {
-            estoquePorProduto = dadosEstoque.estoque || {};
-            nomesPorProduto = dadosEstoque.nomes || {};
-            reconstruirIndiceCodigosPorNome();
-            estoqueCarregado = true;
-        }
+    // Mantido apenas para a integração antiga de laudos/peças do formulário.
+    // O estoque NÃO usa mais CSV nem arquivo físico; usa WEB_APP_URL?action=getEstoque.
+    const GOOGLE_SHEETS_ID = '1Txe61UvhFurTnllGhH8-ESKlriwLIA2zIHwxKg22EeA';
 
-        if (dadosAgendamento) {
-            preencherDadosAgendamento(dadosAgendamento);
-        } else {
-            document.getElementById('ra').readOnly = false;
-            document.getElementById('ra').style.background = '#fff';
-            document.getElementById('ra').style.cursor = 'text';
-        }
-
-    }).catch(err => {
-        console.error('Erro de conexão:', err);
-        alert('Falha ao sincronizar com o banco de dados. Verifique a conexão com a internet.');
-    }).finally(() => {
-        loader.style.display = 'none';
-    });
-});
-
-function fetchAgendamentoSeExistir() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const agendamento = urlParams.get('agendamento');
-    const codigo = urlParams.get('codigo'); 
-    
-    if (!agendamento) return Promise.resolve(null);
-    document.getElementById('ra').value = agendamento;
-    
-    let url = `${GOOGLE_WEBAPP_URL}?action=getAgendamento&agendamento=${agendamento}`;
-    if (codigo) url += `&codigo=${encodeURIComponent(codigo)}`;
-    
-    return fetch(url).then(res => res.json());
-}
-
-function preencherDadosAgendamento(data) {
-    if (data.cliente) document.getElementById('cliente').value = data.cliente;
-    if (data.defeito) document.getElementById('defeitoRelatado').value = data.defeito;
-    
-    if (data.dataEntrada) {
-        try {
-            let d = new Date(data.dataEntrada);
-            if(!isNaN(d)) document.getElementById('dataEntrada').value = d.toISOString().split('T')[0];
-        } catch(e) {}
-    }
-
-    if (data.horarioEntrada) {
-        try {
-            let timeStr = data.horarioEntrada;
-            if (timeStr.includes('T')) {
-                document.getElementById('horaEntrada').value = new Date(timeStr).toISOString().substring(11, 16);
-            } else {
-                document.getElementById('horaEntrada').value = timeStr.substring(0, 5);
-            }
-        } catch(e) {}
-    }
-
-    if (data.codigoEquipamento) {
-        document.getElementById('codigoMaquina').value = data.codigoEquipamento;
-        document.getElementById('codigoMaquina').dispatchEvent(new Event('input'));
-    }
-}
-
-// ============================================================
-// BUSCA DINÂMICA: CÓDIGO -> NOME -> PEÇAS (PLANILHA 2)
-// ============================================================
-let timeoutBusca = null;
-
-document.getElementById('codigoMaquina').addEventListener('input', function() {
-    clearTimeout(timeoutBusca);
-    const codigo = this.value.trim();
-    
-    if (!codigo) {
-        document.getElementById('nomeMaquina').value = '';
-        document.getElementById('pecasBox').classList.add('hidden');
-        document.getElementById("selecaoServico").disabled = true;
+    async function buscarDadosGoogle() {
+      const idBusca = document.getElementById('buscaIdGoogle').value.trim();
+      if(!idBusca) {
+        alert("Por favor, digite o ID do Relatório SAS para buscar.");
         return;
-    }
+      }
+      
+      if (!estoqueCarregado) {
+        alert('Aguarde o carregamento do estoque antes de buscar dados.');
+        return;
+      }
 
-    // Busca o nome do equipamento na base local já carregada (DataShock da Planilha 1)
-    const nomeEncontrado = obterNomeProdutoPorCodigo(codigo);
-    
-    if (nomeEncontrado) {
-        document.getElementById('nomeMaquina').value = nomeEncontrado;
-        
-        // Aguarda 500ms depois que o usuário parar de digitar para puxar as peças da Planilha 2
-        timeoutBusca = setTimeout(() => {
-            carregarPecasDinamicamente(codigo, nomeEncontrado);
-        }, 500);
+      const btnBusca = document.getElementById('btnBuscarGoogle');
+      btnBusca.disabled = true;
+      btnBusca.textContent = "⏳ Buscando no Google...";
 
-    } else {
-        document.getElementById('nomeMaquina').value = 'Equipamento não localizado no DataShock';
-        document.getElementById('pecasBox').classList.add('hidden');
-        document.getElementById("selecaoServico").disabled = true;
-    }
-});
+      try {
+        // --- BUSCA NA ABA 'laudos' ---
+        const dadosLaudos = await carregarAbaCSV('laudos');
 
-function carregarPecasDinamicamente(codigoEquipamento, nomeEquipamento) {
-  const pecasBox = document.getElementById("pecasBox");
-  const lista = document.getElementById("pecasLista");
-  const selectServico = document.getElementById("selecaoServico");
+        let serieRobo = "N/A", serieFonte = "N/A", serieMotor = "N/A";
+        for(let i = 1; i < dadosLaudos.length; i++) {
+          if(dadosLaudos[i] && dadosLaudos[i][1] == idBusca) { // Coluna B = Index 1
+            serieRobo = dadosLaudos[i][7] || "N/A"; // Coluna H = Index 7
+            serieFonte = dadosLaudos[i][8] || "N/A"; // Coluna I = Index 8
+            serieMotor = dadosLaudos[i][9] || "N/A"; // Coluna J = Index 9
+            break;
+          }
+        }
 
-  pecasBox.classList.remove("hidden");
-  lista.innerHTML = "<p style='color: var(--cor-primaria); font-weight:bold;'>Conectando ao banco de peças (Planilha 2)...</p>";
-  selectServico.innerHTML = '<option value="">-- Selecione o serviço --</option>';
-  selectServico.disabled = true;
+        // --- BUSCA NA ABA 'pecas' ---
+        const dadosPecas = await carregarAbaCSV('pecas');
 
-  // Busca na Planilha 2 a aba referente a este código
-  fetch(`${GOOGLE_WEBAPP_URL}?action=getPecas&codigoEquip=${encodeURIComponent(codigoEquipamento)}`)
-    .then(res => res.json())
-    .then(data => {
-        lista.innerHTML = "";
+        let clienteStr = "", equipamentoStr = "";
+        let pecasEncontradas = [];
 
-        if (data.erro) {
-            lista.innerHTML = `<p style='color:red;'>Nenhuma lista de peças vinculada à aba "${codigoEquipamento}". Verifique se a aba existe na planilha de Estruturas.</p>`;
-        } else if (data.pecas && data.pecas.length > 0) {
-            lista.innerHTML = `<h4>Componentes Disponíveis</h4>`;
-            data.pecas.forEach(peca => {
-                const componente = resolverComponentePeloBanco(peca);
-                lista.innerHTML += criarHtmlPeca(componente.codigo, componente.nome, codigoEquipamento);
-            });
-            aplicarEstoqueNasPecas();
+        for(let i = 1; i < dadosPecas.length; i++) {
+          if(dadosPecas[i] && dadosPecas[i][1] == idBusca) { // Coluna B = Index 1
+            if(!clienteStr) clienteStr = dadosPecas[i][2] || ""; // Coluna C = Index 2
+            if(!equipamentoStr) equipamentoStr = dadosPecas[i][3] || ""; // Coluna D = Index 3
             
-            // Define categoria baseada na nomenclatura (WAVE é comercial)
-            const tipo = nomeEquipamento.toUpperCase().includes('WAVE') ? 'comercial' : 'residencial';
-            if (tabelaServicos[tipo]) {
-                selectServico.disabled = false;
-                tabelaServicos[tipo].forEach(servico => {
-                    const option = document.createElement("option");
-                    option.value = JSON.stringify(servico); 
-                    option.text = `${servico.nivel} - ${servico.desc}`;
-                    selectServico.appendChild(option);
-                });
+            let codPeca = dadosPecas[i][4]; // Coluna E = Index 4
+            let qtdPeca = dadosPecas[i][6]; // Coluna G = Index 6
+            
+            if(codPeca) {
+              // FORÇA O PREENCHIMENTO DE 6 DÍGITOS PREENCHENDO COM ZEROS À ESQUERDA
+              let codTratado = codPeca.toString().trim().padStart(6, '0');
+              
+              pecasEncontradas.push({ 
+                codigo: codTratado, 
+                qtd: parseFloat(qtdPeca) || 1 
+              });
             }
+          }
+        }
+
+        // Validação se encontrou algo
+        if(!clienteStr && pecasEncontradas.length === 0 && serieRobo === "N/A") {
+            alert("Nenhuma informação encontrada para este ID nas abas 'laudos' e 'pecas'.");
+            btnBusca.disabled = false;
+            btnBusca.textContent = "🔍 Buscar Dados";
+            return;
+        }
+
+        // --- PREENCHE OS CAMPOS DO CABEÇALHO ---
+        document.getElementById('idEquipamento').value = idBusca;
+        document.getElementById('cliente').value = clienteStr;
+        document.getElementById('nomeEquipamento').value = equipamentoStr;
+        document.getElementById('numeroSerie').value = `Robô: ${serieRobo} | Fonte: ${serieFonte} | Motor: ${serieMotor}`;
+        
+        // Foca no campo de OS para o usuário lembrar de digitar
+        document.getElementById('osEquipamento').focus();
+
+        // --- PREENCHE E GERA A TABELA DE PEÇAS ---
+        document.getElementById('containerItens').innerHTML = ''; // Limpa a tabela atual
+        
+        if (pecasEncontradas.length > 0) {
+            pecasEncontradas.forEach(p => {
+                adicionarItem(); // Adiciona linha em branco
+                
+                // Seleciona a última linha que acabou de ser criada
+                let lastRow = document.getElementById(`itemRow_${itemCount}`);
+                let inputCod = lastRow.querySelector('.item-cod');
+                let inputQtd = lastRow.querySelector('.item-qtd');
+                
+                inputCod.value = p.codigo;
+                inputQtd.value = p.qtd;
+                
+                // Dispara a busca no estoque online para aquela linha
+                buscarProduto(inputCod, itemCount);
+            });
         } else {
-            lista.innerHTML = `<p>Aba vazia.</p>`;
+            adicionarItem(); // Se não tiver peça, deixa uma linha em branco
         }
-    })
-    .catch(err => {
-        console.error(err);
-        lista.innerHTML = "<p style='color:red;'>Erro ao puxar componentes da planilha.</p>";
-    });
-}
 
-// ============================================================
-// UTILIDADES DE ESTOQUE E CRIAÇÃO DO HTML DA PEÇA
-// ============================================================
-function formatarQuantidadeEstoque(valor) { if (valor === null || valor === undefined) return 'N/I'; return Number(valor).toLocaleString('pt-BR', { maximumFractionDigits: 2 }); }
-
-function obterEstoqueProduto(codigo) {
-    const codigoNormalizado = String(codigo || '').trim();
-    if (!codigoNormalizado || !estoqueCarregado) return null;
-    if (Object.prototype.hasOwnProperty.call(estoquePorProduto, codigoNormalizado)) return estoquePorProduto[codigoNormalizado];
-    return 0;
-}
-
-function classeEstoque(quantidade) { if (quantidade === null || quantidade === undefined) return ''; if (quantidade <= 0) return 'estoque-zerado'; if (quantidade <= LIMITE_ESTOQUE_BAIXO) return 'estoque-baixo'; return ''; }
-function textoEstoque(quantidade) { if (quantidade === null || quantidade === undefined) return 'Estoque: N/I'; return `Estoque: ${formatarQuantidadeEstoque(quantidade)}`; }
-
-function aplicarEstoqueNasPecas() {
-    document.querySelectorAll('.peca-item').forEach(item => {
-        const checkbox = item.querySelector('input[type="checkbox"]');
-        const badge = item.querySelector('.estoque-badge');
-        if (!checkbox || !badge) return;
-        item.classList.remove('estoque-baixo', 'estoque-zerado');
-        const estoque = obterEstoqueProduto(checkbox.value);
-        checkbox.dataset.estoque = estoque === null ? '' : String(estoque);
-        badge.textContent = textoEstoque(estoque);
-        const classe = classeEstoque(estoque);
-        if (classe) item.classList.add(classe);
-    });
-}
-
-function criarHtmlPeca(codigo, nomePeca, codigoEquipamento) {
-    const estoque = obterEstoqueProduto(codigo);
-    const estoqueClasse = classeEstoque(estoque);
-    const estoqueValor = estoque === null ? '' : String(estoque);
-    const letra = nomePeca ? nomePeca.charAt(0).toUpperCase() : '?';
-
-    // LÓGICA DAS IMAGENS DINÂMICAS: Tenta .jpg > .png > Placeholder com a letra
-    const codEqSanitizado = encodeURIComponent(String(codigoEquipamento).trim());
-    const codPecaSanitizado = encodeURIComponent(String(codigo).trim());
-    
-    let imagemHtml = '';
-    if (codigo) {
-        // Se a imagem JPG falhar (onerror), tenta carregar a PNG. Se a PNG falhar, exibe o fallback da letra.
-        imagemHtml = `<img src="imagens/${codEqSanitizado}/${codPecaSanitizado}.jpg" class="peca-img" alt="${nomePeca}" 
-                       onerror="if(!this.dataset.triedpng){ this.dataset.triedpng='true'; this.src='imagens/${codEqSanitizado}/${codPecaSanitizado}.png'; } else { this.outerHTML='<div class=\\'peca-img-placeholder\\'>${letra}</div>'; }">`;
-    } else {
-        // Fallback direto (ex: opção "Sem anomalia" que não tem código)
-        imagemHtml = `<div class="peca-img-placeholder">${letra}</div>`;
+      } catch (e) {
+        console.error("Erro na integração Google:", e);
+        alert("Ocorreu um erro de conexão ao tentar ler a planilha do Google Sheets. Verifique o console.");
+      } finally {
+        btnBusca.disabled = false;
+        btnBusca.textContent = "🔍 Buscar Dados";
+      }
     }
 
-    return `
-    <div class="peca-item ${estoqueClasse}">
-        <label class="peca-info">
-        <input type="checkbox" value="${codigo}" data-nome="${nomePeca}" data-estoque="${estoqueValor}" onchange="togglePecaOpcoes(this)">
-        ${imagemHtml}
-        <span class="peca-info-texto">
-            <span>${nomePeca} ${codigo ? `(${codigo})` : ''}</span>
-            ${codigo ? `<span class="estoque-badge">${textoEstoque(estoque)}</span>` : ''}
-        </span>
-        </label>
-        <div class="opcoes-peca">
-        <label class="quantidade-label">
-            Quantidade:
-            <input type="number" class="quantidade-input" value="1" min="1">
-        </label>
-        <div class="cor-selecao">
-            <input type="radio" name="cor_${codigo}" value="verde" id="cor_v_${codigo}" checked>
-            <label for="cor_v_${codigo}">V</label>
 
-            <input type="radio" name="cor_${codigo}" value="azul" id="cor_a_${codigo}">
-            <label for="cor_a_${codigo}">A</label>
-
-            <input type="radio" name="cor_${codigo}" value="rosa" id="cor_r_${codigo}">
-            <label for="cor_r_${codigo}">R</label>
-        </div>
-        </div>
-    </div>
-    `;
-}
-
-function togglePecaOpcoes(checkbox) {
-    const container = checkbox.closest('.peca-item');
-    const opcoes = container.querySelector('.opcoes-peca');
-    opcoes.style.display = checkbox.checked ? 'flex' : 'none';
-}
-
-const imagensParaLaudo = [];
-document.getElementById("fotos").addEventListener("change", function(event) {
-    const preview = document.getElementById("previewFotos");
-    preview.innerHTML = "";
-    imagensParaLaudo.length = 0; 
-
-    for (const file of event.target.files) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const img = document.createElement("img");
-            img.src = e.target.result;
-            img.classList.add("preview-img");
-            preview.appendChild(img);
-            imagensParaLaudo.push(e.target.result); 
-        }
-        reader.readAsDataURL(file);
-    }
-});
-
-
-// ============================================================
-// MARCAR RELATÓRIO GERADO NA PLANILHA
-// Atualiza a mesma linha puxada pelo ID/RA + Código do Equipamento:
-// Coluna H = liberação | Coluna M = Data | Coluna N = Hora
-// ============================================================
-function marcarRelatorioGeradoNaPlanilha(laudoData) {
-    const payload = {
-        action: 'marcarRelatorioGerado',
-        ra: laudoData.ra,
-        codigoEquipamento: laudoData.codigoMaquina
-    };
-
-    return fetch(GOOGLE_WEBAPP_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify(payload)
-    })
-    .then(r => r.json())
-    .then(res => {
-        if (!res.ok) {
-            console.warn('Não foi possível marcar relatório como gerado:', res);
-        } else {
-            console.log('Relatório marcado como gerado:', res);
-        }
-        return res;
-    })
-    .catch(err => {
-        console.error('Erro ao marcar relatório como gerado:', err);
-        return { ok: false, error: err.message };
-    });
-}
-
-// ============================================================
-// GERAÇÃO DO LAUDO
-// ============================================================
-function gerarLaudo() {
-    const erros = [];
-    const cliente = document.getElementById("cliente").value.trim();
-    if (cliente === '') erros.push("O campo 'Cliente' é obrigatório.");
-    if (document.getElementById("ra").value.trim() === '') erros.push("O campo 'RA/ID' é obrigatório.");
-    if (document.getElementById("codigoMaquina").value.trim() === '') erros.push("O campo 'Código do Equipamento' é obrigatório.");
-    if (document.getElementById("nomeMaquina").value.trim() === '' || document.getElementById("nomeMaquina").value.includes('não localizado')) erros.push("O campo 'Nome do Equipamento' deve ser válido.");
-    if (document.getElementById("dataEntrada").value === '') erros.push("O campo 'Data de Entrada' é obrigatório.");
-    if (document.getElementById("horaEntrada").value === '') erros.push("O campo 'Hora de Entrada' é obrigatório.");
-    if (document.getElementById("defeitoRelatado").value.trim() === '') erros.push("O campo 'Defeito Relatado pelo Cliente' é obrigatório.");
-    if (document.getElementById("obsTecnicas").value.trim() === '') erros.push("O campo 'Observações Técnicas' é obrigatório.");
-    if (imagensParaLaudo.length === 0) erros.push("É necessário anexar pelo menos uma foto.");
-    
-    const selectServico = document.getElementById("selecaoServico");
-    if (selectServico.value === "") erros.push("É obrigatório selecionar a 'Classificação do Serviço'.");
-
-    const garantia = document.getElementById("garantia").value;
-    if (garantia === '') erros.push("É obrigatório selecionar se o produto está em 'Garantia'.");
-
-    const pecasSelecionadas = document.querySelectorAll('#pecasLista input[type="checkbox"]:checked');
-    const pecasBoxVisivel = !document.getElementById('pecasBox').classList.contains('hidden');
-
-    if (pecasBoxVisivel && pecasSelecionadas.length === 0) {
-      erros.push("É obrigatório selecionar pelo menos uma peça (ou a opção 'Sem anomalia').");
+    // ==========================================
+    // 3. INICIALIZAÇÃO DA PÁGINA E ITENS
+    // ==========================================
+    function setFormularioBloqueado(bloqueado) {
+      document.querySelectorAll('#requisicaoForm input, #requisicaoForm button, #requisicaoForm textarea, #requisicaoForm select')
+        .forEach(el => { el.disabled = bloqueado; });
     }
 
-    if (erros.length > 0) {
-        alert("Por favor, preencha os seguintes campos antes de gerar o laudo:\n\n- " + erros.join("\n- "));
+    function atualizarOverlayCarregamento(estado, mensagem = '') {
+      const overlay = document.getElementById('loadingOverlay');
+      const spinner = document.getElementById('loadingSpinner');
+      const title = document.getElementById('loadingTitle');
+      const text = document.getElementById('loadingText');
+      const retry = document.getElementById('btnRetryEstoque');
+
+      if (estado === 'carregando') {
+        overlay.classList.remove('hidden');
+        spinner.style.display = 'block';
+        retry.classList.remove('show');
+        title.textContent = 'Carregando estoque';
+        text.textContent = mensagem || 'Aguarde. O formulário será liberado somente depois que a aba DataShock carregar.';
+      }
+
+      if (estado === 'erro') {
+        overlay.classList.remove('hidden');
+        spinner.style.display = 'none';
+        retry.classList.add('show');
+        title.textContent = 'Erro ao carregar estoque';
+        text.textContent = mensagem || 'Não foi possível carregar a aba DataShock. O formulário continuará bloqueado para evitar códigos sem descrição, preço e estoque.';
+      }
+
+      if (estado === 'pronto') {
+        overlay.classList.add('hidden');
+      }
+    }
+
+    function obterIdRelatorioDaUrl() {
+      const params = new URLSearchParams(window.location.search);
+      return (
+        params.get('buscaIdGoogle') ||
+        params.get('id') ||
+        params.get('agendamento') ||
+        params.get('ra') ||
+        ''
+      ).toString().trim();
+    }
+
+    async function aplicarIdRelatorioDaUrl() {
+      const idUrl = obterIdRelatorioDaUrl();
+      if (!idUrl) return;
+
+      const inputBusca = document.getElementById('buscaIdGoogle');
+      inputBusca.value = idUrl;
+
+      const params = new URLSearchParams(window.location.search);
+      const deveBuscarAutomaticamente = params.get('autobuscar') !== '0';
+
+      if (deveBuscarAutomaticamente) {
+        await buscarDadosGoogle();
+      }
+    }
+
+    async function inicializarTela() {
+      estoqueCarregado = false;
+      setFormularioBloqueado(true);
+      atualizarOverlayCarregamento('carregando');
+      document.getElementById('dataRequisicao').value = new Date().toISOString().split('T')[0];
+
+      const carregou = await carregarPlanilhaDeProdutos();
+
+      if (!carregou) {
+        setFormularioBloqueado(true);
+        atualizarOverlayCarregamento('erro');
         return;
+      }
+
+      if (document.querySelectorAll('.item-requisicao').length === 0) {
+        adicionarItem();
+      }
+
+      setFormularioBloqueado(false);
+      atualizarOverlayCarregamento('pronto');
+
+      // Se veio do Kanban com ?id=123, ?agendamento=123 ou ?buscaIdGoogle=123,
+      // preenche o campo "ID do Relatório" e já executa a busca.
+      await aplicarIdRelatorioDaUrl();
     }
 
-    let dadosServico = {};
-    try {
-        dadosServico = JSON.parse(selectServico.value);
-    } catch(e) {
-        dadosServico = { nivel: "N/A", codigo: "N/A", desc: "N/A", detalhe: "N/A" };
+    document.addEventListener("DOMContentLoaded", inicializarTela);
+
+    let itemCount = 0;
+
+    function adicionarItem() {
+      if (!estoqueCarregado) {
+        alert('Aguarde o carregamento do estoque antes de adicionar produtos.');
+        return;
+      }
+      itemCount++;
+      const container = document.getElementById('containerItens');
+      const itemDiv = document.createElement('div');
+      itemDiv.className = 'item-requisicao';
+      itemDiv.id = `itemRow_${itemCount}`;
+
+      itemDiv.innerHTML = `
+        <div class="form-group"><label>Código</label><input type="text" class="item-cod" required placeholder="Digite..." onchange="buscarProduto(this, ${itemCount})"></div>
+        <div class="form-group"><label>Descrição</label><input type="text" class="item-desc" required placeholder="..."></div>
+        <div class="form-group"><label>Tipo</label><input type="text" class="item-tipo" value="RP" required></div>
+        <div class="form-group"><label>Unid.</label><input type="text" class="item-unid" value="PC" required></div>
+        <div class="form-group"><label>Estoque</label><input type="text" class="item-estoque calc-display" readonly value="0" tabindex="-1" title="Disponível em Estoque"></div>
+        <div class="form-group"><label>Qtd</label><input type="number" class="item-qtd" min="1" step="0.01" value="1" oninput="calcularLinha(${itemCount})"></div>
+        <div class="form-group"><label>V. Unit (R$)</label><input type="number" class="item-valor" min="0" step="0.01" value="0.00" oninput="calcularLinha(${itemCount})"></div>
+        <div class="form-group"><label>Desc. (%)</label><input type="number" class="item-desc-perc" min="0" max="100" step="0.1" value="40" oninput="calcularLinha(${itemCount})"></div>
+        <div class="form-group"><label>Imposto (R$)</label><input type="number" class="item-imposto" min="0" step="0.01" value="0.00" oninput="calcularLinha(${itemCount})"></div>
+        <div class="form-group"><label>V. Pago</label><input type="text" class="item-pago calc-display" readonly value="R$ 0.00" tabindex="-1"></div>
+        <button type="button" class="btn-remover" onclick="removerItem(${itemCount})" title="Remover item">X</button>
+      `;
+      container.appendChild(itemDiv);
     }
 
-    const coresMap = {
-        verde: { background: '#21b92d', text: '#000000' },
-        azul: { background: '#205fe1', text: '#000000' },
-        rosa: { background: '#ff00ff', text: '#000000' }
-    };
+    function removerItem(id) {
+      const itemRow = document.getElementById(`itemRow_${id}`);
+      if (itemRow) itemRow.remove();
+    }
 
-    const dataGeracao = new Date().toLocaleDateString('pt-BR');
+    // --- PROCV AUTOMÁTICO NA DIGITAÇÃO MANUAL ---
+    function buscarProduto(inputElement, id) {
+      if (!estoqueCarregado) {
+        alert('Aguarde o estoque carregar antes de digitar códigos.');
+        return;
+      }
+      let codDigitado = inputElement.value.trim();
+      const linhaHTML = document.getElementById(`itemRow_${id}`);
+      
+      if(!linhaHTML || !codDigitado) return;
 
-    const laudoData = {
-        ra: document.getElementById("ra").value,
-        dataEntrada: new Date(document.getElementById("dataEntrada").value).toLocaleDateString('pt-BR', {timeZone: 'UTC'}),
-        horaEntrada: document.getElementById("horaEntrada").value,
-        cliente: cliente,
-        codigoMaquina: document.getElementById("codigoMaquina").value,
-        nomeMaquina: document.getElementById("nomeMaquina").value,
-        equipamento: document.getElementById("nomeMaquina").value,
-        codRobo: document.getElementById("codRobo").value,
-        codFonte: document.getElementById("codFonte").value,
-        codMotor: document.getElementById("codMotor").value,
-        codBateria: document.getElementById("codBateria").value,
-        acessorios: Array.from(document.querySelectorAll('input[name="acessorios"]:checked')).map(el => el.value).join(', ') || 'Nenhum',
-        defeitoRelatado: document.getElementById("defeitoRelatado").value,
-        obsTecnicas: document.getElementById("obsTecnicas").value.replace(/\n/g, '<br>'),
-        obsGerais: document.getElementById("obsGerais").value.replace(/\n/g, '<br>'),
-        pecasSelecionadas: Array.from(document.querySelectorAll('#pecasLista input[type="checkbox"]:checked')).map(el => {
-            const container = el.closest('.peca-item');
-            const quantidadeInput = container.querySelector('.quantidade-input');
-            const corInput = container.querySelector('input[name="cor_' + el.value + '"]:checked');
-            const estoque = el.dataset.estoque === '' ? null : Number(el.dataset.estoque);
-            return { codigo: el.value, nome: el.dataset.nome, quantidade: quantidadeInput.value, estoque: estoque, cor: corInput ? corInput.value : 'verde' };
-        }),
-        imagens: imagensParaLaudo,
-        dataGeracao: dataGeracao, 
-        servico: dadosServico,
-        garantia: garantia
-    };
+      // Se o usuário digitou menos que 6 dígitos manualmente, preenche com zero na tela
+      codDigitado = codDigitado.padStart(6, '0');
+      inputElement.value = codDigitado;
 
-    // Assim que o técnico clica em "Gerar Laudo Técnico", atualiza a linha original da planilha.
-    marcarRelatorioGeradoNaPlanilha(laudoData);
+      const produto = bancoProdutos[codDigitado];
+      
+      if(produto) {
+        linhaHTML.querySelector('.item-desc').value = produto.descricao;
+        linhaHTML.querySelector('.item-tipo').value = produto.tipo;
+        linhaHTML.querySelector('.item-valor').value = produto.valorUnitario;
+        linhaHTML.querySelector('.item-estoque').value = produto.estoque;
+        
+        linhaHTML.classList.add('destaque-sucesso');
+        setTimeout(() => linhaHTML.classList.remove('destaque-sucesso'), 1000);
 
-    const basePath = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
-    const caminhoImagemLegenda = basePath + 'imagens/tabelacores.jpg';
-    const caminhoLogo = basePath + 'imagens/logolaudo.jpg';
+        calcularLinha(id);
+      }
+    }
 
-    const novaJanela = window.open('', '_blank');
-    novaJanela.document.write(`
+    // --- LÓGICA MATEMÁTICA ---
+    function calcularLinha(id) {
+      const linha = document.getElementById(`itemRow_${id}`);
+      if(!linha) return;
+
+      const qtd = parseFloat(linha.querySelector('.item-qtd').value) || 0;
+      const vUnit = parseFloat(linha.querySelector('.item-valor').value) || 0;
+      const descPerc = parseFloat(linha.querySelector('.item-desc-perc').value) || 0;
+      const imposto = parseFloat(linha.querySelector('.item-imposto').value) || 0;
+
+      const totalBruto = qtd * vUnit;
+      const valorComDesconto = totalBruto - (totalBruto * (descPerc / 100));
+      const valorFinalPago = valorComDesconto + imposto;
+
+      linha.querySelector('.item-pago').value = `R$ ${valorFinalPago.toFixed(2)}`;
+    }
+
+    // ==========================================
+    // 4. GERAÇÃO DO DOCUMENTO DE IMPRESSÃO
+    // ==========================================
+    function gerarRequisicao() {
+      const form = document.getElementById('requisicaoForm');
+      if (!form.checkValidity()) { form.reportValidity(); return; }
+
+      const payload = {
+        solicitante: document.getElementById('nomeSolicitante').value.toUpperCase(),
+        departamento: document.getElementById('departamento').value.toUpperCase(),
+        data: document.getElementById('dataRequisicao').value.split('-').reverse().join('/'),
+        cliente: document.getElementById('cliente').value.toUpperCase(),
+        equipamento: document.getElementById('nomeEquipamento').value.toUpperCase(),
+        id: document.getElementById('idEquipamento').value,
+        orcamento: document.getElementById('orcamento').value.toUpperCase(),
+        formaPagamento: document.getElementById('formaPagamento').value.toUpperCase(),
+        os: document.getElementById('osEquipamento').value,
+        numeroSerie: document.getElementById('numeroSerie').value.toUpperCase(),
+        observacoes: document.getElementById('observacoes').value,
+        itens: [],
+        valorTotalGeral: 0
+      };
+
+      const linhas = document.querySelectorAll('.item-requisicao');
+      if(linhas.length === 0) { alert("Adicione pelo menos um produto!"); return; }
+
+      let somatoriaTotal = 0;
+
+      linhas.forEach(linha => {
+        const qtd = parseFloat(linha.querySelector('.item-qtd').value) || 0;
+        const vUnit = parseFloat(linha.querySelector('.item-valor').value) || 0;
+        const total = qtd * vUnit;
+        const descPerc = parseFloat(linha.querySelector('.item-desc-perc').value) || 0;
+        const imposto = parseFloat(linha.querySelector('.item-imposto').value) || 0;
+        const valorPago = (total - (total * (descPerc / 100))) + imposto;
+
+        somatoriaTotal += valorPago;
+
+        payload.itens.push({
+          codigo: linha.querySelector('.item-cod').value,
+          descricao: linha.querySelector('.item-desc').value.toUpperCase(),
+          tipo: linha.querySelector('.item-tipo').value.toUpperCase(),
+          unid: linha.querySelector('.item-unid').value.toUpperCase(),
+          estoque: linha.querySelector('.item-estoque').value,
+          qtd: qtd,
+          vUnit: vUnit,
+          total: total,
+          descPerc: descPerc,
+          imposto: imposto,
+          valorPago: valorPago
+        });
+      });
+
+      payload.valorTotalGeral = somatoriaTotal;
+
+      abrirImpressao(payload);
+    }
+
+    function abrirImpressao(dados) {
+      const novaJanela = window.open('', '_blank');
+      
+      const basePath = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+      const caminhoLogo = basePath + 'imagens/logolaudo.jpg';
+      
+      let tabelaItensHTML = '';
+      dados.itens.forEach(item => {
+        tabelaItensHTML += `
+          <tr>
+            <td style="text-align: center;">${item.codigo}</td>
+            <td>${item.descricao}</td>
+            <td style="text-align: center;">${item.tipo}</td>
+            <td style="text-align: center;">${item.unid}</td>
+            <td style="text-align: center;">${item.estoque}</td>
+            <td style="text-align: center;">${item.qtd.toLocaleString('pt-BR', {minimumFractionDigits: 3, maximumFractionDigits: 3})}</td>
+            <td style="text-align: right;">R$ ${item.vUnit.toFixed(2).replace('.',',')}</td>
+            <td style="text-align: right;">R$ ${item.total.toFixed(2).replace('.',',')}</td>
+            <td style="text-align: center;">${item.descPerc > 0 ? item.descPerc : '0'}</td>
+            <td style="text-align: right;">R$ ${item.imposto.toFixed(2).replace('.',',')}</td>
+            <td style="text-align: right; font-weight:bold;">R$ ${item.valorPago.toFixed(2).replace('.',',')}</td>
+          </tr>
+        `;
+      });
+
+      let observacoesHTML = dados.observacoes 
+        ? dados.observacoes.replace(/\n/g, '<br>')
+        : '<br><br><br>';
+
+      let formaPgtoHTML = dados.formaPagamento 
+        ? `<span style="font-weight: normal; margin-left: 5px; font-size: 11px;">${dados.formaPagamento}</span>`
+        : `<span style="font-weight: normal; margin-left: 5px;">__________________________________________________</span>`;
+
+      novaJanela.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
-          <title>Laudo Técnico - RA/ID ${laudoData.ra}</title>
+          <title>Requisição CD - OS ${dados.os}</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 0; background-color: #fff; color: #333; }
-            .container { max-width: 800px; margin: 20px auto; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #000; padding: 8px; text-align: left; font-size: 14px; }
-            th { background-color: #e9ecef; font-weight: bold; }
-            .section { margin-bottom: 30px; }
-            .section h2 {
-              font-size: 14px; font-weight: bold; color: #fff;
-              background-color: #002060; padding: 8px;
-              margin: 0 0 15px 0; border-radius: 4px;
+            body { font-family: Rubik, sans-serif; font-size: 11px; color: #333; margin: 0; padding: 20px;}
+            .container { max-width: 950px; margin: 0 auto; }
+            
+            .header-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            .header-table td { vertical-align: middle; }
+            .logo-cell { width: 220px; text-align: left; }
+            .logo-cell img { max-width: 200px; height: auto; }
+            .company-title { font-weight: bold; font-size: 20px; color: #002060; text-align: right; margin-bottom: 5px; }
+            .doc-title { font-size: 16px; font-weight: bold; text-align: right; color: #555; text-transform: uppercase; }
+
+            .section-title { 
+              background-color: #002060; 
+              color: #ffffff; 
+              font-weight: bold; 
+              padding: 6px 10px; 
+              font-size: 14px; 
+              margin-top: 20px; 
+              margin-bottom: 0;
+              text-transform: uppercase;
+              border-radius: 4px 4px 0 0;
             }
-            .fotos-grid {
+
+            table.info-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+            table.info-table td { border: 1px solid #ccc; padding: 8px 10px; font-size: 12px; text-transform: uppercase; vertical-align: top;}
+            table.info-table strong { display: block; color: #002060; font-size: 10px; margin-bottom: 4px; }
+            
+            table.table-produtos { width: 100%; border-collapse: collapse; }
+            table.table-produtos th { 
+              background-color: #002060; 
+              color: #fff; 
+              text-align: center; 
+              font-size: 10px; 
+              font-weight: bold; 
+              padding: 8px; 
+              border: 1px solid #002060;
+            }
+            table.table-produtos td { border: 1px solid #ccc; padding: 6px 8px; font-size: 10px; text-transform: uppercase; }
+            
+            .obs-box {
+              border: 1px solid #ccc;
+              border-top: none;
+              padding: 10px;
+              font-size: 12px;
+              min-height: 40px;
+              border-radius: 0 0 4px 4px;
+            }
+
+            .assinaturas-container {
               display: grid;
-              grid-template-columns: repeat(3, 1fr);
-              gap: 10px; margin-top: 10px;
+              grid-template-columns: repeat(5, 1fr);
+              gap: 15px;
+              margin-top: 60px;
+              text-align: center;
             }
-            .fotos-grid img { 
-              width: 100%; height: 5cm; object-fit: contain; border-radius: 4px; 
-              border: 1px solid #ccc; background-color: #f9f9f9; 
+            .assinaturas-container .box-assinatura {
+              border-top: 1px solid #000;
+              padding-top: 5px;
             }
-            .header-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; border: 2px solid #000; }
-            .header-table td { border: 1px solid #000; padding: 5px; vertical-align: middle; }
-            .logo-cell { width: 200px; text-align: center; padding: 10px; }
-            .logo-cell img { max-width: 180px; height: auto; }
-            .info-table { width: 100%; }
-            .info-table td { border: 1px solid #000; padding: 8px; font-size: 14px; }
-            .company-name { 
-              background-color: #002060; color: white; font-weight: bold; 
-              text-align: center; font-size: 18px; padding: 8px; 
+            .assinaturas-container strong {
+              font-size: 11px;
+              color: #002060;
+              display: block;
             }
-            .info-grid { 
-              display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
-              padding: 15px; border: 1px solid #eee; border-radius: 4px;
+            .assinaturas-container span {
+              font-size: 10px;
             }
-            .info-item { padding-bottom: 8px; border-bottom: 1px dotted #ccc; font-size: 14px; }
-            .info-item span { font-weight: bold; }
-            p { font-size: 14px; line-height: 1.6; margin-top: 0;}
-            .assinaturas-section { display: flex; justify-content: space-around; margin-top: 80px; text-align: center; }
-            .assinatura-box { width: 300px; }
-            .assinatura-linha { border-top: 1px solid #000; margin-top: 5px; padding-top: 5px; }
+
+            .no-print { text-align: center; margin-bottom: 20px; }
+            .no-print button { padding: 10px 20px; background: #007bff; color: #fff; border: none; cursor: pointer; border-radius: 4px; font-weight: bold;}
             
-            .service-table { width: 100%; margin-top: 20px; border: 2px solid #002060; }
-            .service-table th { background-color: #002060; color: white; text-align: center; }
-            .service-table td { text-align: center; padding: 10px; }
-            .estoque-pdf-baixo { background-color: #fff3cd; color: #664d03; font-weight: bold; }
-            .estoque-pdf-zerado { background-color: #f8d7da; color: #842029; font-weight: bold; }
-            
-            .classegarantia { text-align: right; font-weight: bold; color: black; font-size: 16px; margin-top: 20px; }
-            .button-container { text-align: center; margin-top: 30px; }
-            .button { 
-              padding: 12px 25px; border: none; border-radius: 5px; cursor: pointer; 
-              font-size: 16px; color: white; margin: 0 10px; 
-            }
-            .print-btn { background-color: #007bff; }
-            .save-btn { background-color: #28a745; }
             @media print { 
-              .no-print { display: none; }
-              body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-              .section h2, .service-table th { background-color: #002060 !important; color: #fff !important; }
+              .no-print { display: none; } 
+              body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact;} 
+              .section-title, table.table-produtos th { background-color: #002060 !important; color: #fff !important; }
+              table.info-table strong { color: #002060 !important; }
+              .assinaturas-container strong { color: #002060 !important; }
             }
           </style>
         </head>
         <body>
+          <div class="no-print">
+            <button onclick="window.print()">🖨️ Imprimir Requisição</button>
+          </div>
+
           <div class="container">
+            
             <table class="header-table">
               <tr>
-                <td class="logo-cell"><img src="${caminhoLogo}" alt="Logo da Empresa"></td>
+                <td class="logo-cell">
+                  <img src="${caminhoLogo}" alt="Sodramar" onerror="this.outerHTML='<h1 style=\\'color:#002060; margin:0;\\'>SODRAMAR</h1><p style=\\'font-size:10px; margin:0;\\'>A Piscina dos Seus Sonhos.</p>'">
+                </td>
                 <td>
-                  <table class="info-table">
-                    <tr><td class="company-name" colspan="2">SODRAMAR INDUSTRIA E COMERCIO LTDA</td></tr>
-                    <tr>
-                        <td><strong>Laudo técnico</strong></td>
-                        <td rowspan="2" style="text-align:center; vertical-align: middle;">${laudoData.dataGeracao}</td>
-                    </tr>
-                    <tr><td><strong>RA/ID:</strong> ${laudoData.ra}</td></tr>
-                  </table>
+                  <div class="company-title">SODRAMAR INDUSTRIA E COMERCIO LTDA</div>
+                  <div class="doc-title">REQUISIÇÃO DE MATERIAL DO CD</div>
                 </td>
               </tr>
             </table>
 
-            <div class="section">
-              <h2>DADOS DO PRODUTO</h2>
-              <div class="info-grid">
-                <div class="info-item"><span>Código Equipamento:</span> ${laudoData.codigoMaquina}</div>
-                <div class="info-item"><span>Nome Equipamento:</span> ${laudoData.nomeMaquina}</div>
-                <div class="info-item"><span>Data de Entrada:</span> ${laudoData.dataEntrada}</div>
-                <div class="info-item"><span>Hora de Entrada:</span> ${laudoData.horaEntrada}</div>
-                <div class="info-item"><span>Cliente:</span> ${laudoData.cliente}</div>
-                <div class="info-item"><span>Código do Robô:</span> ${laudoData.codRobo || 'N/A'}</div>
-                <div class="info-item"><span>Código da Fonte:</span> ${laudoData.codFonte || 'N/A'}</div>
-                <div class="info-item"><span>Código do Motor:</span> ${laudoData.codMotor || 'N/A'}</div>
-                <div class="info-item"><span>Código da Bateria:</span> ${laudoData.codBateria || 'N/A'}</div>
-                <div class="info-item"><span>Acessórios:</span> ${laudoData.acessorios}</div>
+            <div class="section-title">DADOS DO SOLICITANTE</div>
+            <table class="info-table">
+              <tr>
+                <td style="width: 50%;"><strong>SETOR / DEPARTAMENTO</strong>${dados.departamento}</td>
+                <td style="width: 50%;"><strong>DATA DA SOLICITAÇÃO</strong>${dados.data}</td>
+              </tr>
+              <tr>
+                <td colspan="2"><strong>NOME DO SOLICITANTE</strong>${dados.solicitante}</td>
+              </tr>
+            </table>
+
+            <div class="section-title">ANÁLISE TÉCNICA</div>
+            <table class="info-table">
+              <tr>
+                <td style="width: 25%;"><strong>CLIENTE</strong>${dados.cliente}</td>
+                <td style="width: 15%;"><strong>EQUIPAMENTO</strong>${dados.equipamento}</td>
+                <td style="width: 15%;"><strong>ID</strong>${dados.id}</td>
+                <td style="width: 15%;"><strong>ORÇAMENTO</strong>${dados.orcamento}</td>
+                <td style="width: 15%;"><strong>OS</strong>${dados.os}</td>
+              </tr>
+              <tr>
+                <td colspan="5"><strong>NÚMEROS DE SÉRIE</strong>${dados.numeroSerie}</td>
+              </tr>
+            </table>
+
+            <div class="section-title">PRODUTOS REQUISITADOS</div>
+            <table class="table-produtos">
+              <thead>
+                <tr>
+                  <th style="width: 7%;">CÓDIGO</th>
+                  <th style="width: 26%;">DESCRIÇÃO</th>
+                  <th style="width: 4%;">TIPO</th>
+                  <th style="width: 4%;">UNID.</th>
+                  <th style="width: 6%;">ESTOQUE</th>
+                  <th style="width: 6%;">QUANT.</th>
+                  <th style="width: 9%;">V. UNIT.</th>
+                  <th style="width: 9%;">TOTAL</th>
+                  <th style="width: 6%;">DESC.(%)</th>
+                  <th style="width: 8%;">IMPOSTO</th>
+                  <th style="width: 15%;">VALOR PAGO</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tabelaItensHTML}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="10" style="text-align: right; font-weight: bold; padding: 10px; font-size: 12px; background-color: #f8f9fa;">
+                    VALOR TOTAL DA REQUISIÇÃO:
+                  </td>
+                  <td style="text-align: right; font-weight: bold; font-size: 12px; background-color: #e9ecef; color: #002060;">
+                    R$ ${dados.valorTotalGeral.toFixed(2).replace('.',',')}
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="11" style="text-align: left; padding: 10px; font-size: 11px;">
+                    <strong style="color: #002060;">FORMA DE PAGTO:</strong>
+                    ${formaPgtoHTML}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+
+            <div class="section-title">OBSERVAÇÕES</div>
+            <div class="obs-box">
+              ${observacoesHTML}
+            </div>
+
+            <div class="assinaturas-container">
+              <div class="box-assinatura">
+                <strong>Visto do Solicitante</strong>
+              </div>
+              <div class="box-assinatura">
+                <strong>Visto da Engenharia</strong>
+                <span>(Cleiton Frank)</span>
+              </div>
+              <div class="box-assinatura">
+                <strong>Visto do Comex</strong>
+              </div>
+              <div class="box-assinatura">
+                <strong>Visto da Diretoria</strong>
+              </div>
+              <div class="box-assinatura">
+                <strong>Visto responsável pelo CD</strong>
               </div>
             </div>
-
-            <div class="section"><h2>DEFEITO RELATADO PELO CLIENTE</h2><p>${laudoData.defeitoRelatado}</p></div>
-            <div class="section"><h2>OBSERVAÇÕES TÉCNICAS</h2><p>${laudoData.obsTecnicas}</p></div>
-            <div class="section"><h2>FOTOS DO EQUIPAMENTO</h2><div class="fotos-grid">${laudoData.imagens.map(src => `<img src="${src}">`).join('')}</div></div>
-            <div class="section"><h2>OBSERVAÇÕES GERAIS</h2><p>${laudoData.obsGerais || 'Nenhuma.'}</p></div>
-            <div class="section">
-                <h2>PEÇAS PARA SUBSTITUIÇÃO</h2>
-                <table>
-                    <thead><tr><th>Código</th><th>Descrição</th><th>Quantidade</th><th>Estoque disponivel ${laudoData.dataGeracao}</th></tr></thead>
-                    <tbody>
-                    ${laudoData.pecasSelecionadas.map(peca => {
-                        const estoqueClassePdf = peca.estoque === null ? '' : (peca.estoque <= 0 ? 'estoque-pdf-zerado' : (peca.estoque <= LIMITE_ESTOQUE_BAIXO ? 'estoque-pdf-baixo' : ''));
-                        return `<tr style="background-color: ${coresMap[peca.cor].background}; color: ${coresMap[peca.cor].text};"><td>${peca.codigo}</td><td>${peca.nome}</td><td>${peca.quantidade}</td><td class="${estoqueClassePdf}">${textoEstoque(peca.estoque).replace('Estoque: ', '')}</td></tr>`;
-                    }).join('')}
-                    </tbody>
-                </table>
-            </div>
-            <div class="section"><img src="${caminhoImagemLegenda}" alt="Legenda de Cores" style="width: 100%; max-width: 500px; display: block; margin: auto;"></div>
             
-            <div class="section">
-                <h2>CLASSIFICAÇÃO DO SERVIÇO (MÃO DE OBRA)</h2>
-                <table class="service-table">
-                    <tr>
-                        <th style="width: 15%">Complexidade</th>
-                        <th style="width: 15%">Código</th>
-                        <th style="width: 30%">Descrição</th>
-                        <th style="width: 40%">Detalhe do Serviço</th>
-                    </tr>
-                    <tr>
-                        <td><strong>${laudoData.servico.nivel}</strong></td>
-                        <td>${laudoData.servico.codigo}</td>
-                        <td>${laudoData.servico.desc}</td>
-                        <td style="text-align: left">${laudoData.servico.detalhe}</td>
-                    </tr>
-                </table>
-            </div>
-
-            <p class="classegarantia">Garantia: ${laudoData.garantia}</p>
-
-            <div class="assinaturas-section">
-                <div class="assinatura-box"><div class="assinatura-linha">Supervisor</div></div>
-                <div class="assinatura-box"><div class="assinatura-linha">Laboratório(Estagiário)</div></div>
-            </div>
-            <div class="button-container no-print">
-              <button class="button save-btn" onclick="salvarNaPlanilha()">Salvar na Planilha</button>
-              <button class="button print-btn" onclick="window.print()">Imprimir Laudo</button>
-            </div>
           </div>
-
-          <script>
-            const laudoDataParaEnvio = ${JSON.stringify(laudoData)};
-            const GOOGLE_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzCfu6XW3hI3uuKaQj5DCCDKxDlsW1IdRketmDlWtcv8sE8KF1wk28VAmHwm1IsMbxY/exec';
-            const UPLOAD_TOKEN = 'MEU_TOKEN_SEGURO_123';
-            function salvarNaPlanilha() {
-              const payload = {
-                token: UPLOAD_TOKEN,
-                ra: laudoDataParaEnvio.ra,
-                cliente: laudoDataParaEnvio.cliente,
-                equipamento: laudoDataParaEnvio.equipamento,
-                dataEntrada: laudoDataParaEnvio.dataEntrada,
-                horaEntrada: laudoDataParaEnvio.horaEntrada,
-                acessorios: laudoDataParaEnvio.acessorios,
-                codRobo: laudoDataParaEnvio.codRobo,
-                codFonte: laudoDataParaEnvio.codFonte,
-                codMotor: laudoDataParaEnvio.codMotor,
-                codBateria: laudoDataParaEnvio.codBateria,
-                
-                // Mapeando os novos campos para colunas (ajuste o Google Script se necessário)
-                // Para não quebrar sua planilha, estou enviando o código e nível no campo antigo de tempoAnalise
-                tempoAnalise: laudoDataParaEnvio.servico.codigo + " - " + laudoDataParaEnvio.servico.nivel, 
-                
-                garantia: laudoDataParaEnvio.garantia,
-                defeitoRelatado: laudoDataParaEnvio.defeitoRelatado.replace(/<br>/g, "\\n"),
-                obsTecnicas: laudoDataParaEnvio.obsTecnicas.replace(/<br>/g, "\\n"),
-                obsGerais: laudoDataParaEnvio.obsGerais.replace(/<br>/g, "\\n"),
-                pecasSelecionadas: laudoDataParaEnvio.pecasSelecionadas
-              };
-
-              const btnSalvar = document.querySelector('.save-btn');
-              btnSalvar.disabled = true;
-              btnSalvar.textContent = 'Enviando...';
-
-              fetch(GOOGLE_WEBAPP_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify(payload)
-              })
-              .then(r => r.text())
-              .then(txt => {
-                try {
-                  const res = JSON.parse(txt);
-                  if (res.ok) {
-                    alert('Dados salvos na planilha com sucesso!');
-                    btnSalvar.textContent = 'Salvo com Sucesso!';
-                  } else {
-                    alert('Falha ao salvar na planilha: ' + (res.error || 'Erro desconhecido'));
-                    btnSalvar.disabled = false;
-                    btnSalvar.textContent = 'Salvar na Planilha';
-                  }
-                } catch {
-                  alert('Upload concluído (sem resposta JSON). Verifique a planilha.');
-                  btnSalvar.textContent = 'Salvo!';
-                }
-              })
-              .catch(err => {
-                console.error(err);
-                alert('Erro de conexão ao salvar na planilha: ' + err);
-                btnSalvar.disabled = false;
-                btnSalvar.textContent = 'Salvar na Planilha';
-              });
-            }
-
-          <\/script>
         </body>
         </html>
-    `);
-    novaJanela.document.close();
-}
-</script>
-
-
-<div class="image-lightbox" id="imageLightbox" aria-hidden="true">
-  <div class="image-lightbox-content">
-    <button type="button" class="image-lightbox-close" id="imageLightboxClose" aria-label="Fechar imagem">&times;</button>
-    <img src="" alt="" id="imageLightboxImg">
-    <div class="image-lightbox-title" id="imageLightboxTitle"></div>
-  </div>
-</div>
-
-<script>
-(function melhoriasVisuaisLaudo() {
-  function iniciar() {
-    const botao = document.getElementById("btnGerarLaudo");
-
-    function campoTemValor(id) {
-      const campo = document.getElementById(id);
-      return campo && String(campo.value || "").trim() !== "";
+      `);
+      novaJanela.document.close();
     }
-
-    function equipamentoValido() {
-      const nome = document.getElementById("nomeMaquina");
-      return nome && String(nome.value || "").trim() !== "" && !String(nome.value || "").includes("não localizado");
-    }
-
-    function formularioCompleto() {
-      const camposObrigatorios = [
-        "cliente",
-        "ra",
-        "codigoMaquina",
-        "dataEntrada",
-        "horaEntrada",
-        "garantia",
-        "defeitoRelatado",
-        "obsTecnicas"
-      ];
-
-      const camposOk = camposObrigatorios.every(campoTemValor);
-      const servico = document.getElementById("selecaoServico");
-      const servicoOk = servico && !servico.disabled && String(servico.value || "").trim() !== "";
-      const fotosOk = typeof imagensParaLaudo !== "undefined" && imagensParaLaudo.length > 0;
-
-      const pecasBox = document.getElementById("pecasBox");
-      const pecasVisiveis = pecasBox && !pecasBox.classList.contains("hidden");
-      const pecasOk = !pecasVisiveis || document.querySelectorAll('#pecasLista input[type="checkbox"]:checked').length > 0;
-
-      return camposOk && equipamentoValido() && servicoOk && fotosOk && pecasOk;
-    }
-
-    function atualizarBotao() {
-      if (!botao) return;
-      const completo = formularioCompleto();
-      botao.classList.toggle("btn-disabled", !completo);
-      botao.setAttribute("aria-disabled", completo ? "false" : "true");
-      botao.title = completo
-        ? "Gerar laudo técnico"
-        : "Preencha todos os campos obrigatórios para finalizar";
-    }
-
-    if (botao) {
-      const gerarOriginal = window.gerarLaudo;
-      if (typeof gerarOriginal === "function") {
-        window.gerarLaudo = function() {
-          atualizarBotao();
-          if (!formularioCompleto()) {
-            alert("Preencha todos os campos obrigatórios antes de finalizar o laudo.");
-            return;
-          }
-          return gerarOriginal.apply(this, arguments);
-        };
-      }
-
-      document.addEventListener("input", atualizarBotao, true);
-      document.addEventListener("change", function() {
-        setTimeout(atualizarBotao, 40);
-      }, true);
-      document.addEventListener("click", function(event) {
-        if (event.target.closest("#pecasLista")) {
-          setTimeout(atualizarBotao, 40);
-        }
-      }, true);
-
-      // Como alguns campos são preenchidos via planilha/fetch, acompanha por alguns segundos.
-      let tentativas = 0;
-      const timer = setInterval(function() {
-        atualizarBotao();
-        tentativas++;
-        if (tentativas > 80) clearInterval(timer);
-      }, 250);
-
-      atualizarBotao();
-    }
-
-    const lightbox = document.getElementById("imageLightbox");
-    const lightboxImg = document.getElementById("imageLightboxImg");
-    const lightboxTitle = document.getElementById("imageLightboxTitle");
-    const closeBtn = document.getElementById("imageLightboxClose");
-
-    function abrirImagem(img) {
-      if (!lightbox || !lightboxImg || !lightboxTitle) return;
-      lightboxImg.src = img.src;
-      lightboxImg.alt = img.alt || "Imagem do componente";
-      lightboxTitle.textContent = img.alt || "Imagem do componente";
-      lightbox.classList.add("show");
-      lightbox.setAttribute("aria-hidden", "false");
-      document.body.style.overflow = "hidden";
-    }
-
-    function fecharImagem() {
-      if (!lightbox || !lightboxImg) return;
-      lightbox.classList.remove("show");
-      lightbox.setAttribute("aria-hidden", "true");
-      lightboxImg.src = "";
-      document.body.style.overflow = "";
-    }
-
-    document.addEventListener("click", function(event) {
-      const img = event.target.closest(".peca-img");
-      if (img) {
-        event.preventDefault();
-        event.stopPropagation();
-        abrirImagem(img);
-        return;
-      }
-
-      if (event.target === lightbox) {
-        fecharImagem();
-      }
-    }, true);
-
-    if (closeBtn) {
-      closeBtn.addEventListener("click", fecharImagem);
-    }
-
-    document.addEventListener("keydown", function(event) {
-      if (event.key === "Escape" && lightbox && lightbox.classList.contains("show")) {
-        fecharImagem();
-      }
-    });
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", iniciar);
-  } else {
-    iniciar();
-  }
-})();
-</script>
-
-
-<script>
-(function ativarAlternanciaDeTema() {
-  function iniciar() {
-    const btn = document.getElementById("themeToggleBtn");
-    if (!btn) return;
-
-    const icon = btn.querySelector(".theme-icon");
-    const label = btn.querySelector(".theme-label");
-
-    function aplicarTema(tema) {
-      const modoClaro = tema === "light";
-      document.body.classList.toggle("light-mode", modoClaro);
-
-      if (icon) icon.textContent = modoClaro ? "🌙" : "☀️";
-      if (label) label.textContent = modoClaro ? "Modo noturno" : "Modo claro";
-
-      localStorage.setItem("temaGeradorRelatorio", modoClaro ? "light" : "dark");
-    }
-
-    aplicarTema(localStorage.getItem("temaGeradorRelatorio") || "dark");
-
-    btn.addEventListener("click", function() {
-      aplicarTema(document.body.classList.contains("light-mode") ? "dark" : "light");
-    });
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", iniciar);
-  } else {
-    iniciar();
-  }
-})();
-</script>
-
+  </script>
 </body>
 </html>
