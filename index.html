@@ -404,8 +404,6 @@
       bancoProdutos = {};
 
       try {
-        // Agora o estoque vem EXCLUSIVAMENTE do Apps Script / Google Sheets.
-        // Rota usada no Apps Script: doGet?action=getEstoque
         const urlEstoque = `${WEB_APP_URL}?action=getEstoque&_=${Date.now()}`;
         const response = await fetch(urlEstoque, { cache: 'no-store' });
         if (!response.ok) throw new Error('Não foi possível acessar o Apps Script de estoque.');
@@ -416,22 +414,43 @@
         }
 
         const nomes = estoqueOnline.nomes || {};
-        const estoques = estoqueOnline.estoque || {};
-
-        // Estes campos já ficam preparados caso você atualize o Apps Script
-        // para retornar também Tipo e Preço da aba DataShock.
         const tipos = estoqueOnline.tipos || estoqueOnline.tipo || {};
         const precos = estoqueOnline.precos || estoqueOnline.preco || estoqueOnline.precosUnitarios || {};
+        
+        // Estruturação flexível para captar multiplos estoques enviados pelo JSON
+        const estoquePadrão = estoqueOnline.estoque || {};
+        const estoquesCD = estoqueOnline.estoqueCD || estoquePadrão; 
+        const estoquesPI = estoqueOnline.estoquePI || {};
+        const estoquesMP = estoqueOnline.estoqueMP || {};
 
         Object.keys(nomes).forEach(codigoOriginal => {
           const cod = codigoOriginal.toString().trim().padStart(6, '0');
           const codigoSemZero = codigoOriginal.toString().trim().replace(/^0+/, '');
 
+          const tipoProduto = tipos[codigoOriginal] || tipos[cod] || tipos[codigoSemZero] || 'RP';
+          const valorUnitario = parseValorMonetario(precos[codigoOriginal] || precos[cod] || precos[codigoSemZero] || 0);
+
+          // Capturando os valores individuais para a regra de negócio
+          const qtdCD = Number(estoquesCD[codigoOriginal] ?? estoquesCD[cod] ?? estoquesCD[codigoSemZero] ?? 0);
+          const qtdPI = Number(estoquesPI[codigoOriginal] ?? estoquesPI[cod] ?? estoquesPI[codigoSemZero] ?? 0);
+          const qtdMP = Number(estoquesMP[codigoOriginal] ?? estoquesMP[cod] ?? estoquesMP[codigoSemZero] ?? 0);
+
+          let estoqueFinal = 0;
+
+          // Regra de Negócio: Prioridade Dinâmica Baseada no Tipo
+          if (tipoProduto.toUpperCase() === 'RP') {
+            // Retorna o maior valor comparando CD e PI
+            estoqueFinal = Math.max(qtdCD, qtdPI);
+          } else {
+            // Comportamento padrão (CD)
+            estoqueFinal = qtdCD;
+          }
+
           bancoProdutos[cod] = {
             descricao: nomes[codigoOriginal] || nomes[cod] || '',
-            tipo: tipos[codigoOriginal] || tipos[cod] || tipos[codigoSemZero] || 'RP',
-            valorUnitario: parseValorMonetario(precos[codigoOriginal] || precos[cod] || precos[codigoSemZero] || 0),
-            estoque: estoques[codigoOriginal] ?? estoques[cod] ?? estoques[codigoSemZero] ?? 0
+            tipo: tipoProduto,
+            valorUnitario: valorUnitario,
+            estoque: estoqueFinal
           };
         });
 
@@ -456,9 +475,6 @@
     // 2. INTEGRAÇÃO GOOGLE SHEETS (API PUBLICA CSV)
     // ==========================================
     const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby71jdg4zcudOYmfj_yI1_a-K_KCtuw-1EoX14ki61y8Co681HHSFWOdXtsQPcNpP-xvg/exec';
-
-    // Mantido apenas para a integração antiga de laudos/peças do formulário.
-    // O estoque NÃO usa mais CSV nem arquivo físico; usa WEB_APP_URL?action=getEstoque.
     const GOOGLE_SHEETS_ID = '1Txe61UvhFurTnllGhH8-ESKlriwLIA2zIHwxKg22EeA';
 
     async function buscarDadosGoogle() {
@@ -478,35 +494,32 @@
       btnBusca.textContent = "⏳ Buscando no Google...";
 
       try {
-        // --- BUSCA NA ABA 'laudos' ---
         const dadosLaudos = await carregarAbaCSV('laudos');
 
         let serieRobo = "N/A", serieFonte = "N/A", serieMotor = "N/A";
         for(let i = 1; i < dadosLaudos.length; i++) {
-          if(dadosLaudos[i] && dadosLaudos[i][1] == idBusca) { // Coluna B = Index 1
-            serieRobo = dadosLaudos[i][7] || "N/A"; // Coluna H = Index 7
-            serieFonte = dadosLaudos[i][8] || "N/A"; // Coluna I = Index 8
-            serieMotor = dadosLaudos[i][9] || "N/A"; // Coluna J = Index 9
+          if(dadosLaudos[i] && dadosLaudos[i][1] == idBusca) {
+            serieRobo = dadosLaudos[i][7] || "N/A"; 
+            serieFonte = dadosLaudos[i][8] || "N/A"; 
+            serieMotor = dadosLaudos[i][9] || "N/A"; 
             break;
           }
         }
 
-        // --- BUSCA NA ABA 'pecas' ---
         const dadosPecas = await carregarAbaCSV('pecas');
 
         let clienteStr = "", equipamentoStr = "";
         let pecasEncontradas = [];
 
         for(let i = 1; i < dadosPecas.length; i++) {
-          if(dadosPecas[i] && dadosPecas[i][1] == idBusca) { // Coluna B = Index 1
-            if(!clienteStr) clienteStr = dadosPecas[i][2] || ""; // Coluna C = Index 2
-            if(!equipamentoStr) equipamentoStr = dadosPecas[i][3] || ""; // Coluna D = Index 3
+          if(dadosPecas[i] && dadosPecas[i][1] == idBusca) {
+            if(!clienteStr) clienteStr = dadosPecas[i][2] || ""; 
+            if(!equipamentoStr) equipamentoStr = dadosPecas[i][3] || ""; 
             
-            let codPeca = dadosPecas[i][4]; // Coluna E = Index 4
-            let qtdPeca = dadosPecas[i][6]; // Coluna G = Index 6
+            let codPeca = dadosPecas[i][4]; 
+            let qtdPeca = dadosPecas[i][6]; 
             
             if(codPeca) {
-              // FORÇA O PREENCHIMENTO DE 6 DÍGITOS PREENCHENDO COM ZEROS À ESQUERDA
               let codTratado = codPeca.toString().trim().padStart(6, '0');
               
               pecasEncontradas.push({ 
@@ -517,7 +530,6 @@
           }
         }
 
-        // Validação se encontrou algo
         if(!clienteStr && pecasEncontradas.length === 0 && serieRobo === "N/A") {
             alert("Nenhuma informação encontrada para este ID nas abas 'laudos' e 'pecas'.");
             btnBusca.disabled = false;
@@ -525,23 +537,19 @@
             return;
         }
 
-        // --- PREENCHE OS CAMPOS DO CABEÇALHO ---
         document.getElementById('idEquipamento').value = idBusca;
         document.getElementById('cliente').value = clienteStr;
         document.getElementById('nomeEquipamento').value = equipamentoStr;
         document.getElementById('numeroSerie').value = `Robô: ${serieRobo} | Fonte: ${serieFonte} | Motor: ${serieMotor}`;
         
-        // Foca no campo de OS para o usuário lembrar de digitar
         document.getElementById('osEquipamento').focus();
 
-        // --- PREENCHE E GERA A TABELA DE PEÇAS ---
-        document.getElementById('containerItens').innerHTML = ''; // Limpa a tabela atual
+        document.getElementById('containerItens').innerHTML = ''; 
         
         if (pecasEncontradas.length > 0) {
             pecasEncontradas.forEach(p => {
-                adicionarItem(); // Adiciona linha em branco
+                adicionarItem(); 
                 
-                // Seleciona a última linha que acabou de ser criada
                 let lastRow = document.getElementById(`itemRow_${itemCount}`);
                 let inputCod = lastRow.querySelector('.item-cod');
                 let inputQtd = lastRow.querySelector('.item-qtd');
@@ -549,11 +557,10 @@
                 inputCod.value = p.codigo;
                 inputQtd.value = p.qtd;
                 
-                // Dispara a busca no estoque online para aquela linha
                 buscarProduto(inputCod, itemCount);
             });
         } else {
-            adicionarItem(); // Se não tiver peça, deixa uma linha em branco
+            adicionarItem();
         }
 
       } catch (e) {
@@ -649,8 +656,6 @@
       setFormularioBloqueado(false);
       atualizarOverlayCarregamento('pronto');
 
-      // Se veio do Kanban com ?id=123, ?agendamento=123 ou ?buscaIdGoogle=123,
-      // preenche o campo "ID do Relatório" e já executa a busca.
       await aplicarIdRelatorioDaUrl();
     }
 
@@ -690,7 +695,6 @@
       if (itemRow) itemRow.remove();
     }
 
-    // --- PROCV AUTOMÁTICO NA DIGITAÇÃO MANUAL ---
     function buscarProduto(inputElement, id) {
       if (!estoqueCarregado) {
         alert('Aguarde o estoque carregar antes de digitar códigos.');
@@ -701,7 +705,6 @@
       
       if(!linhaHTML || !codDigitado) return;
 
-      // Se o usuário digitou menos que 6 dígitos manualmente, preenche com zero na tela
       codDigitado = codDigitado.padStart(6, '0');
       inputElement.value = codDigitado;
 
@@ -720,7 +723,6 @@
       }
     }
 
-    // --- LÓGICA MATEMÁTICA ---
     function calcularLinha(id) {
       const linha = document.getElementById(`itemRow_${id}`);
       if(!linha) return;
