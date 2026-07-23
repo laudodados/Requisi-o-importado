@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <title>Gerador de Requisição de Material - CD</title>
-  
+
   <!-- Fontes do Design System -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
   <style>
     /* ============================================================
@@ -33,6 +33,7 @@
       --danger:      #dc2626;
       --danger-light: rgba(220,38,38,0.10);
       --warn:        #d97706;
+      --warn-light:  rgba(217,119,6,0.10);
       --success:     #16a34a;
       --success-light: rgba(22,163,74,0.10);
 
@@ -74,6 +75,7 @@
       --danger:      #f87171;
       --danger-light: rgba(248,113,113,0.14);
       --warn:        #fbbf24;
+      --warn-light:  rgba(251,191,36,0.14);
       --success:     #4ade80;
       --success-light: rgba(74,222,128,0.14);
 
@@ -95,8 +97,8 @@
     * {
       scrollbar-width: thin;
       scrollbar-color: var(--soft-border) transparent;
-      box-sizing: border-box; 
-      margin: 0; 
+      box-sizing: border-box;
+      margin: 0;
       padding: 0;
     }
 
@@ -105,7 +107,7 @@
     *::-webkit-scrollbar-thumb { background: var(--soft-border); border-radius: 99px; border: 2px solid transparent; background-clip: content-box; }
     *::-webkit-scrollbar-thumb:hover { background-color: var(--text-3); }
 
-    body { 
+    body {
       font-family: var(--font-ui);
       background: var(--bg);
       color: var(--text);
@@ -114,20 +116,20 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    h1 { 
-      text-align: center; 
-      color: var(--text); 
+    h1 {
+      text-align: center;
+      color: var(--text);
       font-weight: 700;
       letter-spacing: -0.5px;
-      margin-bottom: 8px; 
+      margin-bottom: 8px;
     }
-    
-    .status-bd { 
-      text-align: center; 
-      font-size: 13px; 
-      font-weight: 600; 
-      margin-bottom: 32px; 
-      color: var(--accent); 
+
+    .status-bd {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 32px;
+      color: var(--accent);
     }
 
     /* ============================================================
@@ -164,42 +166,42 @@
       border-bottom-color: rgba(22, 163, 74, 0.2);
     }
 
-    .form-row { 
-      display: grid; 
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
-      gap: 16px; 
-      margin-bottom: 16px; 
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
     }
-    
+
     .form-group { margin-bottom: 12px; }
-    
-    label { 
-      display: block; 
-      font-size: 12px; 
-      font-weight: 600; 
-      color: var(--text-2); 
-      margin-bottom: 6px; 
-      text-transform: uppercase; 
-      letter-spacing: 0.4px; 
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-2);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
     }
-    
+
     input[type="text"], input[type="date"], input[type="number"], textarea {
-      width: 100%; 
-      padding: 11px 13px; 
-      background: var(--soft-bg); 
-      border: 2px solid transparent; 
-      border-radius: var(--radius-sm); 
-      font-size: 13px; 
-      font-family: var(--font-ui); 
-      color: var(--text); 
-      outline: none; 
+      width: 100%;
+      padding: 11px 13px;
+      background: var(--soft-bg);
+      border: 2px solid transparent;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-family: var(--font-ui);
+      color: var(--text);
+      outline: none;
       transition: border-color 0.15s, background 0.15s;
     }
 
     textarea { resize: vertical; min-height: 70px; }
 
     input:focus, textarea:focus {
-      border-color: var(--accent); 
+      border-color: var(--accent);
       background: var(--input-focus-bg);
     }
 
@@ -228,92 +230,150 @@
       border-color: var(--success);
     }
 
+    .item-requisicao.estoque-insuficiente {
+      background: var(--warn-light);
+      border-color: var(--warn);
+    }
+
     .item-requisicao label { font-size: 10px; letter-spacing: 0.2px; }
 
     /* Resultados visuais no form (Campos que preenchem sozinhos) */
-    .calc-display { 
-      background: var(--soft-bg-2) !important; 
-      color: var(--text-3) !important; 
-      font-family: var(--font-mono); 
-      font-weight: 600; 
-      cursor: not-allowed; 
+    .calc-display {
+      background: var(--soft-bg-2) !important;
+      color: var(--text-3) !important;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      cursor: not-allowed;
     }
+
+    /* RODAPÉ TOTAL */
+    .total-rodape {
+      max-width: 1100px;
+      margin: 8px auto 0;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--card-shadow);
+      position: sticky;
+      bottom: 16px;
+    }
+    .total-rodape .lbl { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.4px; }
+    .total-rodape .val { font-family: var(--font-mono); font-size: 20px; font-weight: 700; color: var(--accent); }
+    .total-rodape .alerta { font-size: 12px; font-weight: 600; color: var(--warn); margin-left: 8px; }
 
     /* ============================================================
        BOTÕES
     ============================================================ */
-    button { 
+    button {
       font-family: var(--font-ui);
-      padding: 11px 20px; 
-      font-size: 13px; 
-      font-weight: 600; 
-      border: none; 
-      border-radius: var(--radius-sm); 
-      cursor: pointer; 
+      padding: 11px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
       transition: all 0.15s ease;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
     }
-    
+
     button:focus-visible {
       outline: 2px solid var(--accent-2);
       outline-offset: 2px;
     }
 
-    .btn-adicionar { 
-      background: var(--accent-light); 
-      color: var(--accent); 
+    .btn-adicionar {
+      background: var(--accent-light);
+      color: var(--accent);
       border: 1px dashed var(--accent);
-      margin-bottom: 16px; 
+      margin-bottom: 16px;
       width: 100%;
     }
-    .btn-adicionar:hover { 
-      background: rgba(79,70,229,0.16); 
+    .btn-adicionar:hover {
+      background: rgba(79,70,229,0.16);
       transform: translateY(-1px);
     }
-    
-    .btn-remover { 
-      background: transparent; 
-      color: var(--danger); 
+
+    .btn-remover {
+      background: transparent;
+      color: var(--danger);
       border: 1px solid rgba(220,38,38,0.25);
-      height: 40px; 
+      height: 40px;
       padding: 0 14px;
       font-weight: 700;
     }
-    .btn-remover:hover { 
-      background: var(--danger-light); 
+    .btn-remover:hover {
+      background: var(--danger-light);
     }
-    
-    .btn-principal { 
-      width: 100%; 
-      padding: 16px; 
-      font-size: 15px; 
-      background: var(--success); 
-      color: #fff; 
-      margin-top: 24px; 
+
+    .btn-principal {
+      width: 100%;
+      padding: 16px;
+      font-size: 15px;
+      background: var(--success);
+      color: #fff;
+      margin-top: 24px;
       box-shadow: 0 4px 14px rgba(22, 163, 74, 0.25);
     }
-    .btn-principal:hover { 
-      filter: brightness(1.08); 
-      transform: translateY(-2px); 
+    .btn-principal:hover {
+      filter: brightness(1.08);
+      transform: translateY(-2px);
     }
 
     .btn-google {
-      background: var(--success); 
-      color: white; 
+      background: var(--success);
+      color: white;
       height: 41px;
       box-shadow: 0 2px 8px rgba(22, 163, 74, 0.2);
     }
     .btn-google:hover { filter: brightness(1.08); }
-    
+
     .action-container { max-width: 1100px; margin: 0 auto; }
 
     @media (max-width: 980px) {
       .item-requisicao { grid-template-columns: 1fr 1fr; align-items: start; }
       .item-requisicao .btn-remover { grid-column: span 2; width: 100%; }
       .form-row.custom-row { grid-template-columns: 1fr !important; }
+    }
+
+    /* ============================================================
+       TOASTS
+    ============================================================ */
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 100000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 360px;
+    }
+    .toast {
+      background: var(--modal-bg);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent-2);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.4;
+      animation: toastIn 0.2s ease-out;
+    }
+    .toast.success { border-left-color: var(--success); }
+    .toast.warn { border-left-color: var(--warn); }
+    .toast.error { border-left-color: var(--danger); }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
     }
 
     /* ============================================================
@@ -394,6 +454,8 @@
 </head>
 <body>
 
+  <div class="toast-container" id="toastContainer"></div>
+
   <div class="loading-overlay" id="loadingOverlay">
     <div class="loading-card">
       <div class="loading-spinner" id="loadingSpinner"></div>
@@ -421,7 +483,7 @@
         </button>
       </div>
     </div>
-    
+
     <div class="form-section">
       <h2>Dados do Solicitante</h2>
       <div class="form-row">
@@ -471,7 +533,7 @@
           <input type="text" id="numeroSerie" required placeholder="Preenchimento automático via ID...">
         </div>
       </div>
-      
+
       <div class="form-row custom-row" style="grid-template-columns: 1fr 2fr;">
         <div class="form-group">
           <label>Forma de Pagamento:</label>
@@ -490,9 +552,15 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         Adicionar Produto Manualmente
       </button>
-      
+
       <div id="containerItens">
       </div>
+    </div>
+
+    <div class="total-rodape">
+      <span class="alerta" id="alertaEstoque" style="display:none;">⚠ Itens com estoque insuficiente</span>
+      <span class="lbl">Valor Total da Requisição:</span>
+      <span class="val" id="totalGeral">R$ 0,00</span>
     </div>
 
     <div class="action-container">
@@ -502,10 +570,43 @@
 
   <script>
     // ==========================================
-    // 1. LÓGICA DO BANCO DE DADOS WEB (ESTOQUE ONLINE)
+    // CONFIG / CONSTANTES DE INTEGRAÇÃO
     // ==========================================
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyWLWRFdlvnVzqkTyv50c5EBpvNstXESOrC4lu5r_P9cHWBCCHfQh4Q_MeBMNzW5mQe/exec';
+    const GOOGLE_SHEETS_ID = '1Txe61UvhFurTnllGhH8-ESKlriwLIA2zIHwxKg22EeA';
+    const CACHE_ESTOQUE_KEY = 'cd_estoque_cache_v1';
+    const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos para laudos/pecas
+
     let bancoProdutos = {};
     let estoqueCarregado = false;
+
+    // Cache em memória das abas CSV (laudos/pecas)
+    let cacheAbas = { laudos: { dados: null, ts: 0 }, pecas: { dados: null, ts: 0 } };
+
+    // ==========================================
+    // UTILITÁRIOS
+    // ==========================================
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function showToast(mensagem, tipo = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${tipo}`;
+      toast.textContent = mensagem;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.transition = 'opacity 0.3s';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
 
     function parseCSV(csv) {
       const linhas = [];
@@ -542,8 +643,13 @@
     }
 
     async function carregarAbaCSV(nomeAba) {
+      const cache = cacheAbas[nomeAba];
+      if (cache.dados && (Date.now() - cache.ts) < CACHE_TTL_MS) {
+        return cache.dados;
+      }
+
       const url = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(nomeAba)}`;
-      const response = await fetch(url);
+      const response = await fetch(url, { cache: 'no-store' });
       if (!response.ok) throw new Error(`Não foi possível acessar a aba '${nomeAba}' no Google Sheets.`);
 
       const csv = await response.text();
@@ -551,7 +657,10 @@
         throw new Error(`A aba '${nomeAba}' não foi encontrada ou não está pública para leitura.`);
       }
 
-      return parseCSV(csv);
+      const dados = parseCSV(csv);
+      cache.dados = dados;
+      cache.ts = Date.now();
+      return dados;
     }
 
     function normalizarTexto(valor) {
@@ -565,7 +674,6 @@
 
     function parseValorMonetario(valor) {
       if (valor === undefined || valor === null || valor === '') return 0;
-
       if (typeof valor === 'number') return valor;
 
       const tratado = valor
@@ -587,6 +695,28 @@
       }
 
       return fallback;
+    }
+
+    function formatarMoeda(valor) {
+      return `R$ ${Number(valor || 0).toFixed(2).replace('.', ',')}`;
+    }
+
+    // ==========================================
+    // BANCO DE DADOS WEB (ESTOQUE ONLINE)
+    // ==========================================
+    function salvarEstoqueCache(banco) {
+      try {
+        localStorage.setItem(CACHE_ESTOQUE_KEY, JSON.stringify({ ts: Date.now(), banco }));
+      } catch (e) { /* localStorage indisponível */ }
+    }
+
+    function carregarEstoqueCache() {
+      try {
+        const raw = localStorage.getItem(CACHE_ESTOQUE_KEY);
+        if (!raw) return null;
+        const obj = JSON.parse(raw);
+        return obj && obj.banco ? obj.banco : null;
+      } catch (e) { return null; }
     }
 
     async function carregarPlanilhaDeProdutos() {
@@ -623,35 +753,45 @@
         const total = Object.keys(bancoProdutos).length;
         if (total === 0) throw new Error('A rota getEstoque retornou vazia.');
 
-        statusElement.textContent = `✅ Estoque carregado do Google Sheets / DataShock (${total} peças prontas)`;
+        salvarEstoqueCache(bancoProdutos);
+        statusElement.textContent = `Estoque carregado (${total} peças prontas)`;
         statusElement.style.color = 'var(--success)';
         estoqueCarregado = true;
         return true;
       } catch (error) {
         console.warn('Aviso:', error);
+
+        // Fallback: tenta usar cache local
+        const cache = carregarEstoqueCache();
+        if (cache && Object.keys(cache).length) {
+          bancoProdutos = cache;
+          const total = Object.keys(bancoProdutos).length;
+          estoqueCarregado = true;
+          statusElement.textContent = `⚠ Estoque offline (${total} peças em cache) — valores podem estar desatualizados.`;
+          statusElement.style.color = 'var(--warn)';
+          showToast('Estoque online indisponível. Usando cache local salvo anteriormente.', 'warn');
+          return true;
+        }
+
         estoqueCarregado = false;
-        statusElement.textContent = '⚠️ Não foi possível carregar o estoque pelo Apps Script. Verifique a rota action=getEstoque.';
+        statusElement.textContent = '⚠ Não foi possível carregar o estoque. Verifique a rota action=getEstoque.';
         statusElement.style.color = 'var(--danger)';
         return false;
       }
     }
 
-
     // ==========================================
-    // 2. INTEGRAÇÃO GOOGLE SHEETS (API PUBLICA CSV)
+    // INTEGRAÇÃO GOOGLE SHEETS (BUSCA POR ID)
     // ==========================================
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyWLWRFdlvnVzqkTyv50c5EBpvNstXESOrC4lu5r_P9cHWBCCHfQh4Q_MeBMNzW5mQe/exec';
-    const GOOGLE_SHEETS_ID = '1Txe61UvhFurTnllGhH8-ESKlriwLIA2zIHwxKg22EeA';
-
     async function buscarDadosGoogle() {
       const idBusca = document.getElementById('buscaIdGoogle').value.trim();
       if(!idBusca) {
-        alert("Por favor, digite o ID do Relatório SAS para buscar.");
+        showToast("Por favor, digite o ID do Relatório SAS para buscar.", 'warn');
         return;
       }
-      
+
       if (!estoqueCarregado) {
-        alert('Aguarde o carregamento do estoque antes de buscar dados.');
+        showToast('Aguarde o carregamento do estoque antes de buscar dados.', 'warn');
         return;
       }
 
@@ -661,43 +801,57 @@
 
       try {
         const dadosLaudos = await carregarAbaCSV('laudos');
+        const cabecalhoLaudos = dadosLaudos[0] || [];
+
+        // Mapeia colunas por nome de cabeçalho (fallback nos índices originais)
+        const colIdLaudos = encontrarIndiceCabecalho(cabecalhoLaudos, ['id relatorio', 'id relatório', 'id', 'ra', 'agendamento'], 1);
+        const colSerieRobo = encontrarIndiceCabecalho(cabecalhoLaudos, ['serie robo', 'série robô', 'serie robo', 'robô', 'robo'], 7);
+        const colSerieFonte = encontrarIndiceCabecalho(cabecalhoLaudos, ['serie fonte', 'série fonte', 'fonte'], 8);
+        const colSerieMotor = encontrarIndiceCabecalho(cabecalhoLaudos, ['serie motor', 'série motor', 'motor'], 9);
 
         let serieRobo = "N/A", serieFonte = "N/A", serieMotor = "N/A";
         for(let i = 1; i < dadosLaudos.length; i++) {
-          if(dadosLaudos[i] && dadosLaudos[i][1] == idBusca) { 
-            serieRobo = dadosLaudos[i][7] || "N/A"; 
-            serieFonte = dadosLaudos[i][8] || "N/A"; 
-            serieMotor = dadosLaudos[i][9] || "N/A"; 
+          if(dadosLaudos[i] && String(dadosLaudos[i][colIdLaudos]).trim() == idBusca) {
+            serieRobo = dadosLaudos[i][colSerieRobo] || "N/A";
+            serieFonte = dadosLaudos[i][colSerieFonte] || "N/A";
+            serieMotor = dadosLaudos[i][colSerieMotor] || "N/A";
             break;
           }
         }
 
         const dadosPecas = await carregarAbaCSV('pecas');
+        const cabecalhoPecas = dadosPecas[0] || [];
+
+        const colIdPecas = encontrarIndiceCabecalho(cabecalhoPecas, ['id relatorio', 'id relatório', 'id', 'ra', 'agendamento'], 1);
+        const colCliente = encontrarIndiceCabecalho(cabecalhoPecas, ['cliente'], 2);
+        const colEquipamento = encontrarIndiceCabecalho(cabecalhoPecas, ['equipamento'], 3);
+        const colCodPeca = encontrarIndiceCabecalho(cabecalhoPecas, ['codigo peca', 'código peça', 'codigo', 'código', 'cod'], 4);
+        const colQtdPeca = encontrarIndiceCabecalho(cabecalhoPecas, ['quantidade', 'qtd', 'quant'], 6);
 
         let clienteStr = "", equipamentoStr = "";
         let pecasEncontradas = [];
 
         for(let i = 1; i < dadosPecas.length; i++) {
-          if(dadosPecas[i] && dadosPecas[i][1] == idBusca) {
-            if(!clienteStr) clienteStr = dadosPecas[i][2] || ""; 
-            if(!equipamentoStr) equipamentoStr = dadosPecas[i][3] || ""; 
-            
-            let codPeca = dadosPecas[i][4]; 
-            let qtdPeca = dadosPecas[i][6]; 
-            
+          if(dadosPecas[i] && String(dadosPecas[i][colIdPecas]).trim() == idBusca) {
+            if(!clienteStr) clienteStr = dadosPecas[i][colCliente] || "";
+            if(!equipamentoStr) equipamentoStr = dadosPecas[i][colEquipamento] || "";
+
+            let codPeca = dadosPecas[i][colCodPeca];
+            let qtdPeca = dadosPecas[i][colQtdPeca];
+
             if(codPeca) {
               let codTratado = codPeca.toString().trim().padStart(6, '0');
-              
-              pecasEncontradas.push({ 
-                codigo: codTratado, 
-                qtd: parseFloat(qtdPeca) || 1 
+
+              pecasEncontradas.push({
+                codigo: codTratado,
+                qtd: parseFloat(qtdPeca) || 1
               });
             }
           }
         }
 
         if(!clienteStr && pecasEncontradas.length === 0 && serieRobo === "N/A") {
-            alert("Nenhuma informação encontrada para este ID nas abas 'laudos' e 'pecas'.");
+            showToast("Nenhuma informação encontrada para este ID nas abas 'laudos' e 'pecas'.", 'warn');
             btnBusca.disabled = false;
             btnBusca.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Buscar Dados`;
             return;
@@ -707,40 +861,42 @@
         document.getElementById('cliente').value = clienteStr;
         document.getElementById('nomeEquipamento').value = equipamentoStr;
         document.getElementById('numeroSerie').value = `Robô: ${serieRobo} | Fonte: ${serieFonte} | Motor: ${serieMotor}`;
-        
+
         document.getElementById('osEquipamento').focus();
 
-        document.getElementById('containerItens').innerHTML = ''; 
-        
+        document.getElementById('containerItens').innerHTML = '';
+
         if (pecasEncontradas.length > 0) {
             pecasEncontradas.forEach(p => {
-                adicionarItem(); 
-                
+                adicionarItem();
+
                 let lastRow = document.getElementById(`itemRow_${itemCount}`);
                 let inputCod = lastRow.querySelector('.item-cod');
                 let inputQtd = lastRow.querySelector('.item-qtd');
-                
+
                 inputCod.value = p.codigo;
                 inputQtd.value = p.qtd;
-                
+
                 buscarProduto(inputCod, itemCount);
             });
         } else {
-            adicionarItem(); 
+            adicionarItem();
         }
+
+        atualizarTotalGeral();
+        showToast(`${pecasEncontradas.length} peça(s) carregada(s) para o ID ${idBusca}.`, 'success');
 
       } catch (e) {
         console.error("Erro na integração Google:", e);
-        alert("Ocorreu um erro de conexão ao tentar ler a planilha do Google Sheets. Verifique o console.");
+        showToast("Erro de conexão ao ler a planilha do Google Sheets. Verifique o console.", 'error');
       } finally {
         btnBusca.disabled = false;
         btnBusca.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Buscar Dados`;
       }
     }
 
-
     // ==========================================
-    // 3. INICIALIZAÇÃO DA PÁGINA E ITENS
+    // INICIALIZAÇÃO DA PÁGINA E ITENS
     // ==========================================
     function setFormularioBloqueado(bloqueado) {
       document.querySelectorAll('#requisicaoForm input, #requisicaoForm button, #requisicaoForm textarea, #requisicaoForm select')
@@ -831,7 +987,7 @@
 
     function adicionarItem() {
       if (!estoqueCarregado) {
-        alert('Aguarde o carregamento do estoque antes de adicionar produtos.');
+        showToast('Aguarde o carregamento do estoque antes de adicionar produtos.', 'warn');
         return;
       }
       itemCount++;
@@ -850,42 +1006,47 @@
         <div class="form-group"><label>V. Unit (R$)</label><input type="number" class="item-valor" min="0" step="0.01" value="0.00" oninput="calcularLinha(${itemCount})"></div>
         <div class="form-group"><label>Desc. (%)</label><input type="number" class="item-desc-perc" min="0" max="100" step="0.1" value="40" oninput="calcularLinha(${itemCount})"></div>
         <div class="form-group"><label>Imposto (R$)</label><input type="number" class="item-imposto" min="0" step="0.01" value="0.00" oninput="calcularLinha(${itemCount})"></div>
-        <div class="form-group"><label>V. Pago</label><input type="text" class="item-pago calc-display" readonly value="R$ 0.00" tabindex="-1"></div>
+        <div class="form-group"><label>V. Pago</label><input type="text" class="item-pago calc-display" readonly value="R$ 0,00" tabindex="-1"></div>
         <button type="button" class="btn-remover" onclick="removerItem(${itemCount})" title="Remover item">X</button>
       `;
       container.appendChild(itemDiv);
+      atualizarTotalGeral();
     }
 
     function removerItem(id) {
       const itemRow = document.getElementById(`itemRow_${id}`);
       if (itemRow) itemRow.remove();
+      atualizarTotalGeral();
     }
 
     function buscarProduto(inputElement, id) {
       if (!estoqueCarregado) {
-        alert('Aguarde o estoque carregar antes de digitar códigos.');
+        showToast('Aguarde o estoque carregar antes de digitar códigos.', 'warn');
         return;
       }
       let codDigitado = inputElement.value.trim();
       const linhaHTML = document.getElementById(`itemRow_${id}`);
-      
+
       if(!linhaHTML || !codDigitado) return;
 
       codDigitado = codDigitado.padStart(6, '0');
       inputElement.value = codDigitado;
 
       const produto = bancoProdutos[codDigitado];
-      
+
       if(produto) {
         linhaHTML.querySelector('.item-desc').value = produto.descricao;
         linhaHTML.querySelector('.item-tipo').value = produto.tipo;
         linhaHTML.querySelector('.item-valor').value = produto.valorUnitario;
         linhaHTML.querySelector('.item-estoque').value = produto.estoque;
-        
+
         linhaHTML.classList.add('destaque-sucesso');
         setTimeout(() => linhaHTML.classList.remove('destaque-sucesso'), 1000);
 
         calcularLinha(id);
+      } else {
+        linhaHTML.classList.add('estoque-insuficiente');
+        showToast(`Código ${codDigitado} não encontrado no estoque.`, 'warn');
       }
     }
 
@@ -897,20 +1058,80 @@
       const vUnit = parseFloat(linha.querySelector('.item-valor').value) || 0;
       const descPerc = parseFloat(linha.querySelector('.item-desc-perc').value) || 0;
       const imposto = parseFloat(linha.querySelector('.item-imposto').value) || 0;
+      const estoque = parseFloat(linha.querySelector('.item-estoque').value) || 0;
 
       const totalBruto = qtd * vUnit;
       const valorComDesconto = totalBruto - (totalBruto * (descPerc / 100));
       const valorFinalPago = valorComDesconto + imposto;
 
-      linha.querySelector('.item-pago').value = `R$ ${valorFinalPago.toFixed(2)}`;
+      linha.querySelector('.item-pago').value = formatarMoeda(valorFinalPago);
+
+      // Destaque de estoque insuficiente (somente se o produto foi encontrado)
+      const cod = linha.querySelector('.item-cod').value.trim();
+      const produtoExiste = cod && bancoProdutos[cod];
+      if (produtoExiste && qtd > estoque) {
+        linha.classList.add('estoque-insuficiente');
+      } else if (!linha.classList.contains('destaque-sucesso')) {
+        linha.classList.remove('estoque-insuficiente');
+      }
+
+      atualizarTotalGeral();
+    }
+
+    function atualizarTotalGeral() {
+      let somatoriaTotal = 0;
+      let alertaEstoque = false;
+
+      document.querySelectorAll('.item-requisicao').forEach(linha => {
+        const qtd = parseFloat(linha.querySelector('.item-qtd').value) || 0;
+        const vUnit = parseFloat(linha.querySelector('.item-valor').value) || 0;
+        const total = qtd * vUnit;
+        const descPerc = parseFloat(linha.querySelector('.item-desc-perc').value) || 0;
+        const imposto = parseFloat(linha.querySelector('.item-imposto').value) || 0;
+        const valorPago = (total - (total * (descPerc / 100))) + imposto;
+
+        somatoriaTotal += valorPago;
+
+        const estoque = parseFloat(linha.querySelector('.item-estoque').value) || 0;
+        const cod = linha.querySelector('.item-cod').value.trim();
+        if (cod && bancoProdutos[cod] && qtd > estoque) {
+          alertaEstoque = true;
+        }
+      });
+
+      document.getElementById('totalGeral').textContent = formatarMoeda(somatoriaTotal);
+      document.getElementById('alertaEstoque').style.display = alertaEstoque ? 'inline' : 'none';
     }
 
     // ==========================================
-    // 4. GERAÇÃO DO DOCUMENTO DE IMPRESSÃO
+    // GERAÇÃO DO DOCUMENTO DE IMPRESSÃO
     // ==========================================
     function gerarRequisicao() {
       const form = document.getElementById('requisicaoForm');
       if (!form.checkValidity()) { form.reportValidity(); return; }
+
+      const linhas = document.querySelectorAll('.item-requisicao');
+      if(linhas.length === 0) { showToast("Adicione pelo menos um produto!", 'warn'); return; }
+
+      // Verifica estoque insuficiente
+      const itensEstoqueInsuficiente = [];
+      linhas.forEach(linha => {
+        const cod = linha.querySelector('.item-cod').value.trim();
+        const qtd = parseFloat(linha.querySelector('.item-qtd').value) || 0;
+        const estoque = parseFloat(linha.querySelector('.item-estoque').value) || 0;
+        if (cod && bancoProdutos[cod] && qtd > estoque) {
+          itensEstoqueInsuficiente.push(`${cod} (qtd ${qtd} > est ${estoque})`);
+        }
+      });
+
+      if (itensEstoqueInsuficiente.length > 0) {
+        const prosseguir = confirm(
+          `Atenção: ${itensEstoqueInsuficiente.length} item(ns) com estoque insuficiente:\n\n` +
+          itensEstoqueInsuficiente.join('\n') +
+          `\n\nDeseja gerar a requisição mesmo assim?`
+        );
+        if (!prosseguir) return;
+      }
 
       const payload = {
         solicitante: document.getElementById('nomeSolicitante').value.toUpperCase(),
@@ -927,9 +1148,6 @@
         itens: [],
         valorTotalGeral: 0
       };
-
-      const linhas = document.querySelectorAll('.item-requisicao');
-      if(linhas.length === 0) { alert("Adicione pelo menos um produto!"); return; }
 
       let somatoriaTotal = 0;
 
@@ -965,19 +1183,22 @@
 
     function abrirImpressao(dados) {
       const novaJanela = window.open('', '_blank');
-      
+
       const basePath = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
       const caminhoLogo = basePath + 'imagens/logolaudo.jpg';
-      
+
+      // Escapa todos os textos dinâmicos para evitar XSS
+      const esc = escapeHtml;
+
       let tabelaItensHTML = '';
       dados.itens.forEach(item => {
         tabelaItensHTML += `
           <tr>
-            <td style="text-align: center;">${item.codigo}</td>
-            <td>${item.descricao}</td>
-            <td style="text-align: center;">${item.tipo}</td>
-            <td style="text-align: center;">${item.unid}</td>
-            <td style="text-align: center;">${item.estoque}</td>
+            <td style="text-align: center;">${esc(item.codigo)}</td>
+            <td>${esc(item.descricao)}</td>
+            <td style="text-align: center;">${esc(item.tipo)}</td>
+            <td style="text-align: center;">${esc(item.unid)}</td>
+            <td style="text-align: center;">${esc(item.estoque)}</td>
             <td style="text-align: center;">${item.qtd.toLocaleString('pt-BR', {minimumFractionDigits: 3, maximumFractionDigits: 3})}</td>
             <td style="text-align: right;">R$ ${item.vUnit.toFixed(2).replace('.',',')}</td>
             <td style="text-align: right;">R$ ${item.total.toFixed(2).replace('.',',')}</td>
@@ -988,23 +1209,23 @@
         `;
       });
 
-      let observacoesHTML = dados.observacoes 
-        ? dados.observacoes.replace(/\n/g, '<br>')
+      let observacoesHTML = dados.observacoes
+        ? esc(dados.observacoes).replace(/\n/g, '<br>')
         : '<br><br><br>';
 
-      let formaPgtoHTML = dados.formaPagamento 
-        ? `<span style="font-weight: normal; margin-left: 5px; font-size: 11px;">${dados.formaPagamento}</span>`
+      let formaPgtoHTML = dados.formaPagamento
+        ? `<span style="font-weight: normal; margin-left: 5px; font-size: 11px;">${esc(dados.formaPagamento)}</span>`
         : `<span style="font-weight: normal; margin-left: 5px;">__________________________________________________</span>`;
 
       novaJanela.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
-          <title>Requisição CD - OS ${dados.os}</title>
+          <title>Requisição CD - OS ${esc(dados.os)}</title>
           <style>
             body { font-family: 'Inter', sans-serif; font-size: 11px; color: #333; margin: 0; padding: 20px;}
             .container { max-width: 950px; margin: 0 auto; }
-            
+
             .header-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
             .header-table td { vertical-align: middle; }
             .logo-cell { width: 220px; text-align: left; }
@@ -1012,13 +1233,13 @@
             .company-title { font-weight: bold; font-size: 20px; color: #002060; text-align: right; margin-bottom: 5px; }
             .doc-title { font-size: 16px; font-weight: bold; text-align: right; color: #555; text-transform: uppercase; }
 
-            .section-title { 
-              background-color: #002060; 
-              color: #ffffff; 
-              font-weight: bold; 
-              padding: 6px 10px; 
-              font-size: 14px; 
-              margin-top: 20px; 
+            .section-title {
+              background-color: #002060;
+              color: #ffffff;
+              font-weight: bold;
+              padding: 6px 10px;
+              font-size: 14px;
+              margin-top: 20px;
               margin-bottom: 0;
               text-transform: uppercase;
               border-radius: 4px 4px 0 0;
@@ -1027,19 +1248,19 @@
             table.info-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
             table.info-table td { border: 1px solid #ccc; padding: 8px 10px; font-size: 12px; text-transform: uppercase; vertical-align: top;}
             table.info-table strong { display: block; color: #002060; font-size: 10px; margin-bottom: 4px; }
-            
+
             table.table-produtos { width: 100%; border-collapse: collapse; }
-            table.table-produtos th { 
-              background-color: #002060; 
-              color: #fff; 
-              text-align: center; 
-              font-size: 10px; 
-              font-weight: bold; 
-              padding: 8px; 
+            table.table-produtos th {
+              background-color: #002060;
+              color: #fff;
+              text-align: center;
+              font-size: 10px;
+              font-weight: bold;
+              padding: 8px;
               border: 1px solid #002060;
             }
             table.table-produtos td { border: 1px solid #ccc; padding: 6px 8px; font-size: 10px; text-transform: uppercase; }
-            
+
             .obs-box {
               border: 1px solid #ccc;
               border-top: none;
@@ -1071,10 +1292,10 @@
 
             .no-print { text-align: center; margin-bottom: 20px; }
             .no-print button { padding: 10px 20px; background: #16a34a; color: #fff; border: none; cursor: pointer; border-radius: 4px; font-weight: bold;}
-            
-            @media print { 
-              .no-print { display: none; } 
-              body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact;} 
+
+            @media print {
+              .no-print { display: none; }
+              body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact;}
               .section-title, table.table-produtos th { background-color: #002060 !important; color: #fff !important; }
               table.info-table strong { color: #002060 !important; }
               .assinaturas-container strong { color: #002060 !important; }
@@ -1087,11 +1308,11 @@
           </div>
 
           <div class="container">
-            
+
             <table class="header-table">
               <tr>
                 <td class="logo-cell">
-                  <img src="${caminhoLogo}" alt="Sodramar" onerror="this.outerHTML='<h1 style=\\'color:#002060; margin:0;\\'>SODRAMAR</h1><p style=\\'font-size:10px; margin:0;\\'>A Piscina dos Seus Sonhos.</p>'">
+                  <img src="${esc(caminhoLogo)}" alt="Sodramar" onerror="this.outerHTML='<h1 style=\\'color:#002060; margin:0;\\'>SODRAMAR</h1><p style=\\'font-size:10px; margin:0;\\'>A Piscina dos Seus Sonhos.</p>'">
                 </td>
                 <td>
                   <div class="company-title">SODRAMAR INDUSTRIA E COMERCIO LTDA</div>
@@ -1103,25 +1324,25 @@
             <div class="section-title">DADOS DO SOLICITANTE</div>
             <table class="info-table">
               <tr>
-                <td style="width: 50%;"><strong>SETOR / DEPARTAMENTO</strong>${dados.departamento}</td>
-                <td style="width: 50%;"><strong>DATA DA SOLICITAÇÃO</strong>${dados.data}</td>
+                <td style="width: 50%;"><strong>SETOR / DEPARTAMENTO</strong>${esc(dados.departamento)}</td>
+                <td style="width: 50%;"><strong>DATA DA SOLICITAÇÃO</strong>${esc(dados.data)}</td>
               </tr>
               <tr>
-                <td colspan="2"><strong>NOME DO SOLICITANTE</strong>${dados.solicitante}</td>
+                <td colspan="2"><strong>NOME DO SOLICITANTE</strong>${esc(dados.solicitante)}</td>
               </tr>
             </table>
 
             <div class="section-title">ANÁLISE TÉCNICA</div>
             <table class="info-table">
               <tr>
-                <td style="width: 25%;"><strong>CLIENTE</strong>${dados.cliente}</td>
-                <td style="width: 15%;"><strong>EQUIPAMENTO</strong>${dados.equipamento}</td>
-                <td style="width: 15%;"><strong>ID</strong>${dados.id}</td>
-                <td style="width: 15%;"><strong>ORÇAMENTO</strong>${dados.orcamento}</td>
-                <td style="width: 15%;"><strong>OS</strong>${dados.os}</td>
+                <td style="width: 25%;"><strong>CLIENTE</strong>${esc(dados.cliente)}</td>
+                <td style="width: 15%;"><strong>EQUIPAMENTO</strong>${esc(dados.equipamento)}</td>
+                <td style="width: 15%;"><strong>ID</strong>${esc(dados.id)}</td>
+                <td style="width: 15%;"><strong>ORÇAMENTO</strong>${esc(dados.orcamento)}</td>
+                <td style="width: 15%;"><strong>OS</strong>${esc(dados.os)}</td>
               </tr>
               <tr>
-                <td colspan="5"><strong>NÚMEROS DE SÉRIE</strong>${dados.numeroSerie}</td>
+                <td colspan="5"><strong>NÚMEROS DE SÉRIE</strong>${esc(dados.numeroSerie)}</td>
               </tr>
             </table>
 
@@ -1186,7 +1407,7 @@
                 <strong>Visto responsável pelo CD</strong>
               </div>
             </div>
-            
+
           </div>
         </body>
         </html>
