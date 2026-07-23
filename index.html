@@ -2,145 +2,323 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <title>Gerador de Requisição de Material - CD</title>
   
+  <!-- Fontes do Design System -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
-    /* --- ESTILO GERAL DO FORMULÁRIO (INPUT) --- */
+    /* ============================================================
+       TOKENS (Extraídos do Styles)
+    ============================================================ */
     :root {
-      --cor-primaria: #002060;
-      --cor-fundo: #8ad6cf;
-      --cor-card: #ffffff;
-      --cor-borda: #dee2e6;
-      --cor-sombra: rgba(0, 0, 0, 0.1);
-      --cor-texto: #495057;
-      --cor-titulo: #212529;
-      --cor-sucesso: #28a745;
-      --cor-sucesso-hover: #218838;
-      --cor-perigo: #dc3545;
-      --cor-perigo-hover: #c82333;
-      --cor-google: #2e7d32;
-      --cor-google-hover: #1b5e20;
+      --bg:          #f6f6f9;
+      --surface:     #ffffff;
+      --surface-2:   #eef0f5;
+      --border:      #e1e3ea;
+      --text:        #14161c;
+      --text-2:      #575c68;
+      --text-3:      #9397a3;
+
+      --accent:      #002060;
+      --accent-2:    #6366f1;
+      --accent-hover:#4338ca;
+      --accent-light: rgba(79,70,229,0.10);
+      --accent-gradient: linear-gradient(135deg, #4f46e5 0%, #6d28d9 100%);
+
+      --danger:      #dc2626;
+      --danger-light: rgba(220,38,38,0.10);
+      --warn:        #d97706;
+      --success:     #16a34a;
+      --success-light: rgba(22,163,74,0.10);
+
+      --card-bg:     #ffffff;
+      --card-hover:  #fbfbfd;
+      --card-shadow: 0 1px 2px rgba(20,22,35,0.04), 0 4px 14px rgba(20,22,35,0.06);
+      --modal-bg:    #ffffff;
+      --input-focus-bg: #ffffff;
+      --soft-bg:     rgba(20,22,35,0.045);
+      --soft-bg-2:   rgba(20,22,35,0.028);
+      --soft-border: rgba(20,22,35,0.08);
+      --overlay-bg:  rgba(12,13,20,0.5);
+
+      --radius-sm:   6px;
+      --radius-md:   10px;
+      --radius-lg:   14px;
+      --radius-xl:   20px;
+
+      --font-ui:     'Inter', sans-serif;
+      --font-mono:   'JetBrains Mono', monospace;
     }
+
+    html[data-theme="dark"],
+    body[data-theme="dark"] {
+      --bg:          #0b0c11;
+      --surface:     #14161d;
+      --surface-2:   #1c1f29;
+      --border:      #292d3a;
+      --text:        #f4f5f9;
+      --text-2:      #b3b7c4;
+      --text-3:      #7d8191;
+
+      --accent:      #818cf8;
+      --accent-2:    #a5b4fc;
+      --accent-hover:#a5b4fc;
+      --accent-light: rgba(129,140,248,0.16);
+      --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+
+      --danger:      #f87171;
+      --danger-light: rgba(248,113,113,0.14);
+      --warn:        #fbbf24;
+      --success:     #4ade80;
+      --success-light: rgba(74,222,128,0.14);
+
+      --card-bg:     #171a23;
+      --card-hover:  #1e222d;
+      --card-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.35);
+      --modal-bg:    #14161d;
+      --input-focus-bg: #10121a;
+      --soft-bg:     rgba(255,255,255,0.06);
+      --soft-bg-2:   rgba(255,255,255,0.04);
+      --soft-border: rgba(255,255,255,0.09);
+      --overlay-bg:  rgba(0,0,0,0.65);
+      color-scheme: dark;
+    }
+
+    /* ============================================================
+       SCROLLBAR & BASE
+    ============================================================ */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--soft-border) transparent;
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0;
+    }
+
+    *::-webkit-scrollbar { width: 8px; height: 8px; }
+    *::-webkit-scrollbar-track { background: transparent; }
+    *::-webkit-scrollbar-thumb { background: var(--soft-border); border-radius: 99px; border: 2px solid transparent; background-clip: content-box; }
+    *::-webkit-scrollbar-thumb:hover { background-color: var(--text-3); }
 
     body { 
-      font-family: -apple-system, BlinkMacSystemFont, "Rubik", Roboto, Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background-color: var(--cor-fundo);
-      color: var(--cor-texto);
+      font-family: var(--font-ui);
+      background: var(--bg);
+      color: var(--text);
+      transition: background 0.25s ease, color 0.25s ease;
+      padding: 32px 20px;
+      -webkit-font-smoothing: antialiased;
     }
 
-    h1 { text-align: center; color: var(--cor-titulo); margin-bottom: 5px;}
-    .status-bd { text-align: center; font-size: 12px; font-weight: bold; margin-bottom: 20px; color: #002060; }
+    h1 { 
+      text-align: center; 
+      color: var(--text); 
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px; 
+    }
+    
+    .status-bd { 
+      text-align: center; 
+      font-size: 13px; 
+      font-weight: 600; 
+      margin-bottom: 32px; 
+      color: var(--accent); 
+    }
 
+    /* ============================================================
+       FORMULÁRIO & SEÇÕES
+    ============================================================ */
     .form-section {
-      border: 1px solid var(--cor-borda); 
-      padding: 20px; 
-      margin: 20px auto; 
-      border-radius: 8px; 
-      background-color: var(--cor-card);
-      box-shadow: 0 4px 8px var(--cor-sombra);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      margin: 20px auto;
       max-width: 1100px;
+      box-shadow: var(--card-shadow);
+      transition: box-shadow 0.2s, border-color 0.2s;
     }
 
     .form-section h2 {
       margin-top: 0;
-      border-bottom: 2px solid var(--cor-primaria);
-      padding-bottom: 10px;
-      color: var(--cor-primaria);
-      font-size: 18px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .form-section.integration-box {
+      background: var(--success-light);
+      border-color: rgba(22, 163, 74, 0.2);
+    }
+    .form-section.integration-box h2 {
+      color: var(--success);
+      border-bottom-color: rgba(22, 163, 74, 0.2);
     }
 
     .form-row { 
       display: grid; 
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
-      gap: 15px; 
-      margin-bottom: 15px; 
+      gap: 16px; 
+      margin-bottom: 16px; 
     }
     
-    .form-group { margin-bottom: 10px; }
+    .form-group { margin-bottom: 12px; }
     
     label { 
       display: block; 
-      font-weight: bold; 
-      margin-bottom: 5px; 
-      color: var(--cor-titulo); 
-      font-size: 14px;
+      font-size: 12px; 
+      font-weight: 600; 
+      color: var(--text-2); 
+      margin-bottom: 6px; 
+      text-transform: uppercase; 
+      letter-spacing: 0.4px; 
     }
     
     input[type="text"], input[type="date"], input[type="number"], textarea {
       width: 100%; 
-      padding: 8px 10px; 
-      border-radius: 4px; 
-      border: 1px solid var(--cor-borda); 
-      font-size: 14px; 
-      box-sizing: border-box;
-      transition: border-color 0.2s;
+      padding: 11px 13px; 
+      background: var(--soft-bg); 
+      border: 2px solid transparent; 
+      border-radius: var(--radius-sm); 
+      font-size: 13px; 
+      font-family: var(--font-ui); 
+      color: var(--text); 
+      outline: none; 
+      transition: border-color 0.15s, background 0.15s;
     }
 
-    textarea {
-      resize: vertical;
-    }
+    textarea { resize: vertical; min-height: 70px; }
 
     input:focus, textarea:focus {
-      outline: none;
-      border-color: var(--cor-primaria);
+      border-color: var(--accent); 
+      background: var(--input-focus-bg);
     }
 
     /* ITENS DINÂMICOS */
     .item-requisicao {
       display: grid;
       grid-template-columns: 1.2fr 3fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1.2fr auto;
-      gap: 8px;
+      gap: 10px;
       align-items: end;
-      padding: 15px;
-      background-color: #f8f9fa;
-      border: 1px solid var(--cor-borda);
-      border-radius: 8px;
-      margin-bottom: 10px;
-      transition: background-color 0.3s;
+      padding: 16px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      margin-bottom: 12px;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s, background-color 0.3s;
+    }
+
+    .item-requisicao:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--card-shadow);
+      border-color: var(--soft-border);
     }
 
     .item-requisicao.destaque-sucesso {
-      background-color: #e8f5e9;
-      border-color: var(--cor-sucesso);
+      background: var(--success-light);
+      border-color: var(--success);
     }
 
-    .item-requisicao label { font-size: 11px; }
+    .item-requisicao label { font-size: 10px; letter-spacing: 0.2px; }
 
-    /* BOTOES */
+    /* Resultados visuais no form (Campos que preenchem sozinhos) */
+    .calc-display { 
+      background: var(--soft-bg-2) !important; 
+      color: var(--text-3) !important; 
+      font-family: var(--font-mono); 
+      font-weight: 600; 
+      cursor: not-allowed; 
+    }
+
+    /* ============================================================
+       BOTÕES
+    ============================================================ */
     button { 
-      padding: 10px 15px; 
-      font-size: 14px; 
-      font-weight: bold; 
+      font-family: var(--font-ui);
+      padding: 11px 20px; 
+      font-size: 13px; 
+      font-weight: 600; 
       border: none; 
-      border-radius: 4px; 
+      border-radius: var(--radius-sm); 
       cursor: pointer; 
-      transition: background-color 0.2s;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
     }
-    .btn-adicionar { background-color: var(--cor-primaria); color: white; margin-bottom: 15px; }
-    .btn-adicionar:hover { background-color: #001540; }
     
-    .btn-remover { background-color: var(--cor-perigo); color: white; height: 35px; padding: 0 10px;}
-    .btn-remover:hover { background-color: var(--cor-perigo-hover); }
+    button:focus-visible {
+      outline: 2px solid var(--accent-2);
+      outline-offset: 2px;
+    }
+
+    .btn-adicionar { 
+      background: var(--accent-light); 
+      color: var(--accent); 
+      border: 1px dashed var(--accent);
+      margin-bottom: 16px; 
+      width: 100%;
+    }
+    .btn-adicionar:hover { 
+      background: rgba(79,70,229,0.16); 
+      transform: translateY(-1px);
+    }
     
-    .btn-principal { width: 100%; padding: 15px; font-size: 18px; background-color: var(--cor-sucesso); color: white; margin-top: 20px; }
-    .btn-principal:hover { background-color: var(--cor-sucesso-hover); }
+    .btn-remover { 
+      background: transparent; 
+      color: var(--danger); 
+      border: 1px solid rgba(220,38,38,0.25);
+      height: 40px; 
+      padding: 0 14px;
+      font-weight: 700;
+    }
+    .btn-remover:hover { 
+      background: var(--danger-light); 
+    }
+    
+    .btn-principal { 
+      width: 100%; 
+      padding: 16px; 
+      font-size: 15px; 
+      background: var(--success); 
+      color: #fff; 
+      margin-top: 24px; 
+      box-shadow: 0 4px 14px rgba(22, 163, 74, 0.25);
+    }
+    .btn-principal:hover { 
+      filter: brightness(1.08); 
+      transform: translateY(-2px); 
+    }
+
+    .btn-google {
+      background: var(--success); 
+      color: white; 
+      height: 41px;
+      box-shadow: 0 2px 8px rgba(22, 163, 74, 0.2);
+    }
+    .btn-google:hover { filter: brightness(1.08); }
     
     .action-container { max-width: 1100px; margin: 0 auto; }
 
-    /* Resultados visuais no form (Campos que preenchem sozinhos) */
-    .calc-display { background-color: #e9ecef; color: #495057; font-weight: bold; cursor: not-allowed; }
-
-    @media (max-width: 900px) {
+    @media (max-width: 980px) {
       .item-requisicao { grid-template-columns: 1fr 1fr; align-items: start; }
       .item-requisicao .btn-remover { grid-column: span 2; width: 100%; }
       .form-row.custom-row { grid-template-columns: 1fr !important; }
     }
 
-
-    /* BLOQUEIO DE TELA ENQUANTO O ESTOQUE CARREGA */
+    /* ============================================================
+       LOADING OVERLAY
+    ============================================================ */
     .loading-overlay {
       position: fixed;
       inset: 0;
@@ -148,31 +326,36 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(0, 0, 0, 0.72);
+      background: var(--overlay-bg);
       backdrop-filter: blur(3px);
       padding: 20px;
+      transition: opacity 0.2s ease;
     }
 
-    .loading-overlay.hidden {
-      display: none;
-    }
+    .loading-overlay.hidden { display: none; opacity: 0; }
 
     .loading-card {
       width: min(460px, 100%);
-      background: var(--cor-card);
-      color: var(--cor-texto);
-      border-radius: 12px;
-      padding: 26px;
+      background: var(--modal-bg);
+      color: var(--text);
+      border-radius: var(--radius-xl);
+      padding: 30px;
       text-align: center;
-      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
-      border: 1px solid var(--cor-borda);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--border);
+      animation: fadeSlideUp 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(12px) scale(0.995); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
     }
 
     .loading-spinner {
       width: 42px;
       height: 42px;
-      border: 4px solid #d7d7d7;
-      border-top-color: var(--cor-primaria);
+      border: 4px solid var(--soft-border);
+      border-top-color: var(--accent);
       border-radius: 50%;
       margin: 0 auto 16px;
       animation: spin 0.8s linear infinite;
@@ -180,26 +363,28 @@
 
     .loading-title {
       font-size: 18px;
-      font-weight: 800;
-      color: var(--cor-titulo);
+      font-weight: 700;
+      color: var(--text);
       margin-bottom: 8px;
     }
 
     .loading-text {
-      font-size: 14px;
+      font-size: 13px;
+      color: var(--text-2);
       line-height: 1.5;
       margin-bottom: 16px;
     }
 
     .loading-retry {
       display: none;
-      background: var(--cor-google);
+      background: var(--accent-gradient);
       color: white;
       margin-top: 8px;
+      width: 100%;
     }
 
     .loading-retry.show {
-      display: inline-block;
+      display: inline-flex;
     }
 
     @keyframes spin {
@@ -218,20 +403,22 @@
     </div>
   </div>
 
-
   <h1>Requisição de Material do CD</h1>
   <div class="status-bd" id="statusBD">⏳ Conectando ao estoque online pelo Google Sheets / Apps Script...</div>
 
   <form id="requisicaoForm">
 
-    <div class="form-section" style="background-color: #e8f5e9; border-color: var(--cor-google);">
-      <h2 style="color: var(--cor-google); border-bottom-color: var(--cor-google);">Integração SAS Automática</h2>
+    <div class="form-section integration-box">
+      <h2>Integração SAS Automática</h2>
       <div class="form-row" style="grid-template-columns: 1fr auto; align-items: end;">
         <div class="form-group" style="margin-bottom: 0;">
           <label>ID do Relatório (Google Sheets):</label>
           <input type="text" id="buscaIdGoogle" placeholder="Digite o ID e clique em Buscar...">
         </div>
-        <button type="button" id="btnBuscarGoogle" onclick="buscarDadosGoogle()" style="background-color: var(--cor-google); color: white; height: 38px;">🔍 Buscar Dados</button>
+        <button type="button" id="btnBuscarGoogle" class="btn-google" onclick="buscarDadosGoogle()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          Buscar Dados
+        </button>
       </div>
     </div>
     
@@ -299,10 +486,13 @@
 
     <div class="form-section">
       <h2>Produtos Requisitados</h2>
-      <button type="button" class="btn-adicionar" onclick="adicionarItem()">+ Adicionar Produto Manualmente</button>
+      <button type="button" class="btn-adicionar" onclick="adicionarItem()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        Adicionar Produto Manualmente
+      </button>
       
       <div id="containerItens">
-        </div>
+      </div>
     </div>
 
     <div class="action-container">
@@ -404,8 +594,6 @@
       bancoProdutos = {};
 
       try {
-        // Agora o estoque vem EXCLUSIVAMENTE do Apps Script / Google Sheets.
-        // Rota usada no Apps Script: doGet?action=getEstoque
         const urlEstoque = `${WEB_APP_URL}?action=getEstoque&_=${Date.now()}`;
         const response = await fetch(urlEstoque, { cache: 'no-store' });
         if (!response.ok) throw new Error('Não foi possível acessar o Apps Script de estoque.');
@@ -417,9 +605,6 @@
 
         const nomes = estoqueOnline.nomes || {};
         const estoques = estoqueOnline.estoque || {};
-
-        // Estes campos já ficam preparados caso você atualize o Apps Script
-        // para retornar também Tipo e Preço da aba DataShock.
         const tipos = estoqueOnline.tipos || estoqueOnline.tipo || {};
         const precos = estoqueOnline.precos || estoqueOnline.preco || estoqueOnline.precosUnitarios || {};
 
@@ -439,14 +624,14 @@
         if (total === 0) throw new Error('A rota getEstoque retornou vazia.');
 
         statusElement.textContent = `✅ Estoque carregado do Google Sheets / DataShock (${total} peças prontas)`;
-        statusElement.style.color = 'green';
+        statusElement.style.color = 'var(--success)';
         estoqueCarregado = true;
         return true;
       } catch (error) {
         console.warn('Aviso:', error);
         estoqueCarregado = false;
         statusElement.textContent = '⚠️ Não foi possível carregar o estoque pelo Apps Script. Verifique a rota action=getEstoque.';
-        statusElement.style.color = '#dc3545';
+        statusElement.style.color = 'var(--danger)';
         return false;
       }
     }
@@ -456,9 +641,6 @@
     // 2. INTEGRAÇÃO GOOGLE SHEETS (API PUBLICA CSV)
     // ==========================================
     const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyWLWRFdlvnVzqkTyv50c5EBpvNstXESOrC4lu5r_P9cHWBCCHfQh4Q_MeBMNzW5mQe/exec';
-
-    // Mantido apenas para a integração antiga de laudos/peças do formulário.
-    // O estoque NÃO usa mais CSV nem arquivo físico; usa WEB_APP_URL?action=getEstoque.
     const GOOGLE_SHEETS_ID = '1Txe61UvhFurTnllGhH8-ESKlriwLIA2zIHwxKg22EeA';
 
     async function buscarDadosGoogle() {
@@ -475,38 +657,35 @@
 
       const btnBusca = document.getElementById('btnBuscarGoogle');
       btnBusca.disabled = true;
-      btnBusca.textContent = "⏳ Buscando no Google...";
+      btnBusca.innerHTML = "⏳ Buscando...";
 
       try {
-        // --- BUSCA NA ABA 'laudos' ---
         const dadosLaudos = await carregarAbaCSV('laudos');
 
         let serieRobo = "N/A", serieFonte = "N/A", serieMotor = "N/A";
         for(let i = 1; i < dadosLaudos.length; i++) {
-          if(dadosLaudos[i] && dadosLaudos[i][1] == idBusca) { // Coluna B = Index 1
-            serieRobo = dadosLaudos[i][7] || "N/A"; // Coluna H = Index 7
-            serieFonte = dadosLaudos[i][8] || "N/A"; // Coluna I = Index 8
-            serieMotor = dadosLaudos[i][9] || "N/A"; // Coluna J = Index 9
+          if(dadosLaudos[i] && dadosLaudos[i][1] == idBusca) { 
+            serieRobo = dadosLaudos[i][7] || "N/A"; 
+            serieFonte = dadosLaudos[i][8] || "N/A"; 
+            serieMotor = dadosLaudos[i][9] || "N/A"; 
             break;
           }
         }
 
-        // --- BUSCA NA ABA 'pecas' ---
         const dadosPecas = await carregarAbaCSV('pecas');
 
         let clienteStr = "", equipamentoStr = "";
         let pecasEncontradas = [];
 
         for(let i = 1; i < dadosPecas.length; i++) {
-          if(dadosPecas[i] && dadosPecas[i][1] == idBusca) { // Coluna B = Index 1
-            if(!clienteStr) clienteStr = dadosPecas[i][2] || ""; // Coluna C = Index 2
-            if(!equipamentoStr) equipamentoStr = dadosPecas[i][3] || ""; // Coluna D = Index 3
+          if(dadosPecas[i] && dadosPecas[i][1] == idBusca) {
+            if(!clienteStr) clienteStr = dadosPecas[i][2] || ""; 
+            if(!equipamentoStr) equipamentoStr = dadosPecas[i][3] || ""; 
             
-            let codPeca = dadosPecas[i][4]; // Coluna E = Index 4
-            let qtdPeca = dadosPecas[i][6]; // Coluna G = Index 6
+            let codPeca = dadosPecas[i][4]; 
+            let qtdPeca = dadosPecas[i][6]; 
             
             if(codPeca) {
-              // FORÇA O PREENCHIMENTO DE 6 DÍGITOS PREENCHENDO COM ZEROS À ESQUERDA
               let codTratado = codPeca.toString().trim().padStart(6, '0');
               
               pecasEncontradas.push({ 
@@ -517,31 +696,26 @@
           }
         }
 
-        // Validação se encontrou algo
         if(!clienteStr && pecasEncontradas.length === 0 && serieRobo === "N/A") {
             alert("Nenhuma informação encontrada para este ID nas abas 'laudos' e 'pecas'.");
             btnBusca.disabled = false;
-            btnBusca.textContent = "🔍 Buscar Dados";
+            btnBusca.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Buscar Dados`;
             return;
         }
 
-        // --- PREENCHE OS CAMPOS DO CABEÇALHO ---
         document.getElementById('idEquipamento').value = idBusca;
         document.getElementById('cliente').value = clienteStr;
         document.getElementById('nomeEquipamento').value = equipamentoStr;
         document.getElementById('numeroSerie').value = `Robô: ${serieRobo} | Fonte: ${serieFonte} | Motor: ${serieMotor}`;
         
-        // Foca no campo de OS para o usuário lembrar de digitar
         document.getElementById('osEquipamento').focus();
 
-        // --- PREENCHE E GERA A TABELA DE PEÇAS ---
-        document.getElementById('containerItens').innerHTML = ''; // Limpa a tabela atual
+        document.getElementById('containerItens').innerHTML = ''; 
         
         if (pecasEncontradas.length > 0) {
             pecasEncontradas.forEach(p => {
-                adicionarItem(); // Adiciona linha em branco
+                adicionarItem(); 
                 
-                // Seleciona a última linha que acabou de ser criada
                 let lastRow = document.getElementById(`itemRow_${itemCount}`);
                 let inputCod = lastRow.querySelector('.item-cod');
                 let inputQtd = lastRow.querySelector('.item-qtd');
@@ -549,11 +723,10 @@
                 inputCod.value = p.codigo;
                 inputQtd.value = p.qtd;
                 
-                // Dispara a busca no estoque online para aquela linha
                 buscarProduto(inputCod, itemCount);
             });
         } else {
-            adicionarItem(); // Se não tiver peça, deixa uma linha em branco
+            adicionarItem(); 
         }
 
       } catch (e) {
@@ -561,7 +734,7 @@
         alert("Ocorreu um erro de conexão ao tentar ler a planilha do Google Sheets. Verifique o console.");
       } finally {
         btnBusca.disabled = false;
-        btnBusca.textContent = "🔍 Buscar Dados";
+        btnBusca.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Buscar Dados`;
       }
     }
 
@@ -649,8 +822,6 @@
       setFormularioBloqueado(false);
       atualizarOverlayCarregamento('pronto');
 
-      // Se veio do Kanban com ?id=123, ?agendamento=123 ou ?buscaIdGoogle=123,
-      // preenche o campo "ID do Relatório" e já executa a busca.
       await aplicarIdRelatorioDaUrl();
     }
 
@@ -690,7 +861,6 @@
       if (itemRow) itemRow.remove();
     }
 
-    // --- PROCV AUTOMÁTICO NA DIGITAÇÃO MANUAL ---
     function buscarProduto(inputElement, id) {
       if (!estoqueCarregado) {
         alert('Aguarde o estoque carregar antes de digitar códigos.');
@@ -701,7 +871,6 @@
       
       if(!linhaHTML || !codDigitado) return;
 
-      // Se o usuário digitou menos que 6 dígitos manualmente, preenche com zero na tela
       codDigitado = codDigitado.padStart(6, '0');
       inputElement.value = codDigitado;
 
@@ -720,7 +889,6 @@
       }
     }
 
-    // --- LÓGICA MATEMÁTICA ---
     function calcularLinha(id) {
       const linha = document.getElementById(`itemRow_${id}`);
       if(!linha) return;
@@ -834,7 +1002,7 @@
         <head>
           <title>Requisição CD - OS ${dados.os}</title>
           <style>
-            body { font-family: Rubik, sans-serif; font-size: 11px; color: #333; margin: 0; padding: 20px;}
+            body { font-family: 'Inter', sans-serif; font-size: 11px; color: #333; margin: 0; padding: 20px;}
             .container { max-width: 950px; margin: 0 auto; }
             
             .header-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
@@ -902,7 +1070,7 @@
             }
 
             .no-print { text-align: center; margin-bottom: 20px; }
-            .no-print button { padding: 10px 20px; background: #007bff; color: #fff; border: none; cursor: pointer; border-radius: 4px; font-weight: bold;}
+            .no-print button { padding: 10px 20px; background: #16a34a; color: #fff; border: none; cursor: pointer; border-radius: 4px; font-weight: bold;}
             
             @media print { 
               .no-print { display: none; } 
@@ -982,7 +1150,7 @@
                   <td colspan="10" style="text-align: right; font-weight: bold; padding: 10px; font-size: 12px; background-color: #f8f9fa;">
                     VALOR TOTAL DA REQUISIÇÃO:
                   </td>
-                  <td style="text-align: right; font-weight: bold; font-size: 12px; background-color: #e9ecef; color: #002060;">
+                  <td style="text-align: right; font-weight: bold; font-size: 12px; background-color: #eef0f5; color: #002060;">
                     R$ ${dados.valorTotalGeral.toFixed(2).replace('.',',')}
                   </td>
                 </tr>
